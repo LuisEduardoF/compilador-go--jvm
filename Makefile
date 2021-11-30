@@ -5,6 +5,8 @@ JAVAC=javac
 
 ROOT=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
+# Certifique-se de que o antlr esteja instalado em /usr/local/lib
+
 ANTLR_PATH=/usr/local/lib/antlr-4.9.2-complete.jar
 CLASS_PATH_OPTION=-cp .:$(ANTLR_PATH)
 
@@ -47,7 +49,6 @@ runall:
 	 	$(GRUN) Go sourceFile $${FILENAME} && \
 	 	cd .. ; \
 	done;
-
 
 clean:
 	@rm -rf $(GEN_PATH)
