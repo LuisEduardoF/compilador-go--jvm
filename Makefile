@@ -29,11 +29,12 @@ antlr: GoLexer.g4 GoParser.g4
 	$(ANTLR4) -no-listener -o $(GEN_PATH) GoLexer.g4 GoParser.g4
 
 javac:
-	$(JAVAC) $(CLASS_PATH_OPTION) $(GEN_PATH)/*.java
+	$(JAVAC) $(CLASS_PATH_OPTION) ParserBase/GoParserBase.java $(GEN_PATH)/*.java 
 
 # 'Go' é o prefixo comum das duas gramáticas (GoLexer e GoParser).
 # 'sourceFile' é a regra inicial de GoParser.
 run:
+	cp ParserBase/GoParserBase.class $(GEN_PATH)
 	cd $(GEN_PATH) && $(GRUN) Go sourceFile $(FILE)
 
 #Rodar com a opção -gui
