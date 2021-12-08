@@ -16,7 +16,7 @@ Caso seu ANTLR4 esteja instalado em outro diretorio, basta abrir o Makefile e mo
 ```sh
 ANTLR_PATH=$SEU_DIRETORIO_DE_INSTALACAO_DO_ANTLR4/antlr-4.9.2-complete.jar
 ```
-### Rodando os teste
+### Rodando os testes
 
 Para executar o antlr e o javac apenas utilize:
 ```sh
