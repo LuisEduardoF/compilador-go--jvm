@@ -3,7 +3,7 @@
 ## Instalação
 
 ```sh
-git clone https://github.com/LuisEduardoF/compilador-go--jvm/blob/main/README.md
+git clone https://github.com/LuisEduardoF/compilador-go--jvm
 ```
 
 ## Utilização
