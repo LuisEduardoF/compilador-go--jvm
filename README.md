@@ -31,7 +31,7 @@ FILE=$(IN)/$NOME_DO_SEU_ARQUIVO
 make run
 ```
 
-Parar rodar todos os casos de testes, ie, testar o Scanner e Parser para todos arquivos ".go" na pasta test.
+Parar rodar todos os casos de testes, ie, testar o Scanner e Parser para todos arquivos ".go" na pasta tests.
 ```sh
 make runall
 ```
