@@ -1,5 +1,8 @@
+package parserBase;
+
 import java.util.List;
 import org.antlr.v4.runtime.*;
+import parser.GoLexer;
 
 /**
  * All parser methods that used in grammar (p, prev, notLineTerminator, etc.)

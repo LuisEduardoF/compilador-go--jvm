@@ -17,6 +17,12 @@ GRUN=$(JAVA) $(CLASS_PATH_OPTION) org.antlr.v4.gui.TestRig
 # Diretório para aonde vão os arquivos gerados.
 GEN_PATH=parser
 
+# Diretório aonde está a classe com a função main.
+MAIN_PATH=checker
+
+# Diretório para os arquivos .class
+BIN_PATH=bin
+
 # Diretório para os casos de teste
 DATA=$(ROOT)/tests
 IN=$(DATA)
@@ -28,28 +34,24 @@ all: antlr javac
 # Opção -no-listener foi usada para que o ANTLR não gere alguns arquivos
 # desnecessários para o momento. Isto será explicado melhor nos próximos labs.
 antlr: GoLexer.g4 GoParser.g4
-	$(ANTLR4) -no-listener -o $(GEN_PATH) GoLexer.g4 GoParser.g4
+	$(ANTLR4) -no-listener -visitor -o $(GEN_PATH) GoLexer.g4 GoParser.g4
 
+# Compila todos os subdiretórios e joga todos os .class em BIN_PATH pra organizar.
 javac:
-	$(JAVAC) $(CLASS_PATH_OPTION) ParserBase/GoParserBase.java $(GEN_PATH)/*.java 
+	rm -r -f $(BIN_PATH)
+	mkdir $(BIN_PATH)
+	$(JAVAC) $(CLASS_PATH_OPTION) -d $(BIN_PATH) */*.java
 
-# 'Go' é o prefixo comum das duas gramáticas (GoLexer e GoParser).
-# 'sourceFile' é a regra inicial de GoParser.
 run:
-	cp ParserBase/GoParserBase.class $(GEN_PATH)
-	cd $(GEN_PATH) && $(GRUN) Go sourceFile $(FILE)
-
-#Rodar com a opção -gui
-run-debug:
-	cd $(GEN_PATH) && $(GRUN) Go sourceFile $(FILE) -gui
+	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $(FILE)
 
 runall:
-	-for FILENAME in $(IN)/*.go; do \
+	-for FILE in $(IN)/*.go; do \
 	 	cd $(GEN_PATH) && \
-	 	echo -e "\nRunning $${FILENAME}" && \
-	 	$(GRUN) Go sourceFile $${FILENAME} && \
+	 	echo -e "\nRunning $${FILE}" && \
+	 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $${FILE}; \
 	 	cd .. ; \
 	done;
 
 clean:
-	@rm -rf $(GEN_PATH)
+	@rm -rf $(GEN_PATH) $(BIN_PATH)

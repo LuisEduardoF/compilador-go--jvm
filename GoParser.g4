@@ -28,6 +28,11 @@
 
 parser grammar GoParser;
 
+@header{
+	package parser;
+	import parserBase.GoParserBase;
+}
+
 options {
 	tokenVocab = GoLexer;
 	superClass = GoParserBase;
