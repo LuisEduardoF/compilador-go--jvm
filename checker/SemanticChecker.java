@@ -85,6 +85,22 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
     	System.out.print("\n\n");
     }
     
+    void setLastDeclType(String tipo){
+    	if(tipo.equals("bool")){
+		this.lastDeclType = Type.BOOL_TYPE;
+	}else if(tipo.equals("int") || tipo.equals("int8") || tipo.equals("int16") || tipo.equals("int64")){
+		this.lastDeclType = Type.INT_TYPE;
+	}else if(tipo.equals("string")){
+		this.lastDeclType = Type.STRING_TYPE;
+	}else if(tipo.equals("float64") || tipo.equals("float32")){
+		this.lastDeclType = Type.FLOAT_TYPE;
+	}else if(tipo.equals("complex64") || tipo.equals("complex128")){
+		this.lastDeclType = Type.IMAGINARY_TYPE;
+	}else if(tipo.equals("int32")){
+		this.lastDeclType = Type.RUNE_TYPE;
+	}
+    }
+    
     
     
     
@@ -129,20 +145,17 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
 		this.lastDeclType = Type.ARRAY_TYPE;
     		return null; // Java says must return something even when Void
 	}
-	/*
+	
 	@Override
 	public Void visitVarDecl(GoParser.VarDeclContext ctx) {
 	// Visita a declaração de tipo para definir a variável lastDeclType.
-	visit(ctx.varSpec().type_());
-	// Agora testa se a variável foi redeclarada.
-	// newVar(ctx.IDENTIFIER().getSymbol());
-	return null; // Java says must return something even when Void
-	}*/
+	String tipo = ctx.varSpec(0).type_().typeName().IDENTIFIER().getSymbol().getText();
+	System.out.println("Tipo: " + tipo);
 	
-	@Override
-	public Void visitTypeSpec(GoParser.TypeSpecContext ctx){
-		visit(ctx.typeSpec(0));
-		return null;
+	visit(ctx.varSpec(0).type_().typeName());
+	// Agora testa se a variável foi redeclarada.
+	newVar(ctx.varSpec(0).identifierList().IDENTIFIER(0).getSymbol());
+	return null; // Java says must return something even when Void
 	}
 	
 	
@@ -162,7 +175,7 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
 	
 	
     
-    
+
     /* 
     // Visita a regra var_decl: type_spec ID SEMI
     @Override
