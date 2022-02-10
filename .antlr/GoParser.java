@@ -1,4 +1,8 @@
 // Generated from /home/enzo/Documentos/UFES/Compiladores/compilador-go--jvm/GoParser.g4 by ANTLR 4.8
+
+	package parser;
+	import parserBase.GoParserBase;
+
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;

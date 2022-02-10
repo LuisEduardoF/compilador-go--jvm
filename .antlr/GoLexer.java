@@ -1,4 +1,7 @@
 // Generated from /home/enzo/Documentos/UFES/Compiladores/compilador-go--jvm/GoLexer.g4 by ANTLR 4.8
+
+	package parser;
+
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;

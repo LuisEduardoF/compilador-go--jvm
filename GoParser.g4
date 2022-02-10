@@ -300,13 +300,14 @@ operand: literal | operandName | L_PAREN expression R_PAREN;
 literal: basicLit | compositeLit | functionLit;
 
 basicLit:
-	NIL_LIT
-	| integer
-	| string_
-	| FLOAT_LIT
-	| IMAGINARY_LIT
-	| RUNE_LIT;
-
+	NIL_LIT		#nilType
+	| integer 		#intType
+	| string_ 		#stringType
+	| FLOAT_LIT 		#floatType
+	| IMAGINARY_LIT 	#imaginaryType
+	| RUNE_LIT 		#runeType
+	;
+	
 integer:
 	DECIMAL_LIT
 	| BINARY_LIT
