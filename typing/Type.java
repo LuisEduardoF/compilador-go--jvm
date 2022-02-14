@@ -43,5 +43,10 @@ public enum Type {
 		public String toString() {
 	    		return "array";
 		}
+	},
+	NO_TYPE{
+		public String toString() {
+	    		return "no_type";
+		}
 	}
 }

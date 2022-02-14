@@ -7,6 +7,7 @@ import parser.GoParserBaseVisitor;
 import tables.StrTable;
 import tables.VarTable;
 import typing.Type;
+import ast.AST;
 
 /*
  * Analisador semântico de EZLang implementado como um visitor
@@ -33,7 +34,7 @@ import typing.Type;
  * muito comum de erros. Veja o método visitAssign_stmt abaixo para
  * ter um exemplo.
  */
-public class SemanticChecker extends GoParserBaseVisitor<Void> {
+public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 	private StrTable st = new StrTable();   // Tabela de strings.
     private VarTable vt = new VarTable();   // Tabela de variáveis.
@@ -41,6 +42,8 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
     Type lastDeclType;  // Variável "global" com o último tipo declarado.
     
     private boolean passed = true;
+
+    AST root;
 
     // Testa se o dado token foi declarado antes.
     void checkVar(Token token) {
@@ -57,7 +60,7 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
     }
     
     // Cria uma nova variável a partir do dado token.
-    void newVar(Token token) {
+    AST newVar(Token token) {
     	String text = token.getText();
     	int line = token.getLine();
    		int idx = vt.lookupVar(text);
@@ -66,9 +69,11 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
     			"SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n",
                 line, text, vt.getLine(idx));
         	passed = false;
-            return;
+            return null;
         }
         vt.addVar(text, line, lastDeclType);
+        idx = vt.lookupVar(text);
+        return new AST(ast.NodeKind.VAR_DECL_NODE, idx, lastDeclType);
     }
     
     // Retorna true se os testes passaram.
@@ -85,66 +90,86 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
     	System.out.print("\n\n");
     }
     
+    void printAST() {
+    	AST.printDot(root, vt);
+    }
+  	
+    @Override
+    public AST visitSourceFile(GoParser.SourceFileContext ctx){
+
+    	this.root = AST.newSubtree(ast.NodeKind.PROGRAM_NODE,Type.NO_TYPE);
+    	//System.out.println(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
+    	visit(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
+    	
+    	return this.root;
+    }
+
+    
+    
+    //----------------------------------------------------------------VERIFICADORES DE TIPO----------------------------------------------------------------
     void setLastDeclType(String tipo){
     	if(tipo.equals("bool")){
-		this.lastDeclType = Type.BOOL_TYPE;
-	}else if(tipo.equals("int") || tipo.equals("int8") || tipo.equals("int16") || tipo.equals("int64")){
-		this.lastDeclType = Type.INT_TYPE;
-	}else if(tipo.equals("string")){
-		this.lastDeclType = Type.STRING_TYPE;
-	}else if(tipo.equals("float64") || tipo.equals("float32")){
-		this.lastDeclType = Type.FLOAT_TYPE;
-	}else if(tipo.equals("complex64") || tipo.equals("complex128")){
-		this.lastDeclType = Type.IMAGINARY_TYPE;
-	}else if(tipo.equals("int32")){
-		this.lastDeclType = Type.RUNE_TYPE;
-	}
+			this.lastDeclType = Type.BOOL_TYPE;
+		}else if(tipo.equals("int") || tipo.equals("int8") || tipo.equals("int16") || tipo.equals("int64")){
+			this.lastDeclType = Type.INT_TYPE;
+		}else if(tipo.equals("string")){
+			this.lastDeclType = Type.STRING_TYPE;
+		}else if(tipo.equals("float64") || tipo.equals("float32")){
+			this.lastDeclType = Type.FLOAT_TYPE;
+		}else if(tipo.equals("complex64") || tipo.equals("complex128")){
+			this.lastDeclType = Type.IMAGINARY_TYPE;
+		}else if(tipo.equals("int32")){
+			this.lastDeclType = Type.RUNE_TYPE;
+		}
     }
-    
-    
+
     @Override
-	public Void visitNilType(GoParser.NilTypeContext ctx){
+	public AST visitNilType(GoParser.NilTypeContext ctx){
 		this.lastDeclType = Type.NULL_TYPE;
     	return null; // Java says must return something even when Void	
 	}
 	@Override
-	public Void visitIntType(GoParser.IntTypeContext ctx){
+	public AST visitIntType(GoParser.IntTypeContext ctx){
 		this.lastDeclType = Type.INT_TYPE;
     	return null; // Java says must return something even when Void	
 	}
 	@Override
-	public Void visitStringType(GoParser.StringTypeContext ctx){
+	public AST visitStringType(GoParser.StringTypeContext ctx){
 		this.lastDeclType = Type.STRING_TYPE;
     	return null; // Java says must return something even when Void	
 	}
 	@Override
-	public Void visitFloatType(GoParser.FloatTypeContext ctx){
+	public AST visitFloatType(GoParser.FloatTypeContext ctx){
 		this.lastDeclType = Type.FLOAT_TYPE;
     	return null; // Java says must return something even when Void	
 	}
 	@Override
-	public Void visitImaginaryType(GoParser.ImaginaryTypeContext ctx){
+	public AST visitImaginaryType(GoParser.ImaginaryTypeContext ctx){
 		this.lastDeclType = Type.IMAGINARY_TYPE;
     	return null; // Java says must return something even when Void	
 	}
 	@Override
-	public Void visitRuneType(GoParser.RuneTypeContext ctx){
+	public AST visitRuneType(GoParser.RuneTypeContext ctx){
 		this.lastDeclType = Type.RUNE_TYPE;
     	return null; // Java says must return something even when Void	
 	}
 	@Override
-	public Void visitArrayType(GoParser.ArrayTypeContext ctx){
+	public AST visitArrayType(GoParser.ArrayTypeContext ctx){
 		this.lastDeclType = Type.ARRAY_TYPE;
     	return null; // Java says must return something even when Void
 	}
 	@Override
-	public Void visitBoolType(GoParser.BoolTypeContext ctx){
+	public AST visitBoolType(GoParser.BoolTypeContext ctx){
 		this.lastDeclType = Type.BOOL_TYPE;
     	return null; // Java says must return something even when Void
 	}
 
+
+
+
+	//----------------------------------------------------------------CRIAÇAO DE VARIAVEIS----------------------------------------------------------------
 	@Override
-	public Void visitVarDecl(GoParser.VarDeclContext ctx) {
+	public AST visitVarDecl(GoParser.VarDeclContext ctx) {
 		// Visita a declaração de tipo para definir a variável lastDeclType.
 		
 
@@ -182,23 +207,70 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
 		return null; // Java says must return something even when Void
 	}
 	@Override
-	public Void visitShortVarDecl(GoParser.ShortVarDeclContext ctx){
+	public AST visitShortVarDecl(GoParser.ShortVarDeclContext ctx){
 
 		int tam = ctx.expressionList().expression().size();
+
 		for(int i = 0;i < tam;i++){
+			//setar o tipo
 			visit(ctx.expressionList().expression(i).primaryExpr().operand().literal().basicLit());
-		
-			newVar(ctx.identifierList().IDENTIFIER(i).getSymbol());
+			
+
+			AST aux = newVar(ctx.identifierList().IDENTIFIER(i).getSymbol());
+			System.out.println(aux);
+			if(aux != null){
+				this.root.addChild(aux);
+			}
+			else{
+				System.out.println("ERRO DE ALOCACAO");
+			}
+			
 		}
 		
 		return null;
 	}
 	
+	//----------------------------------------------------------------CHECAGEM DE TIPO----------------------------------------------------------------
 	
 	
+	private void typeError(int line, String operation, Type t1,Type t2){
+		System.out.printf("SEMANTIC ERROS (%d): incopatible types %s and %s for operator %s",line,t1.toString(),t2.toString(),operation);
+		passed = false;
+	}
+
+
+	private void checkAssingTypes(int line,Type left,Type right){
+
+
+		if(left == Type.FLOAT_TYPE && !(right == Type.INT_TYPE || right == Type.FLOAT_TYPE || right == Type.RUNE_TYPE)){
+			typeError(line,"=",left,right);
+		}
+		else if(right != left){
+			typeError(line,"=",left,right);
+		}
+	}
+
+	private void checkBoolExpr(int line, String s, Type t){
+
+		if(t != Type.BOOL_TYPE){
+			System.out.printf("SEMANTIC ERROR (%d): conditional expression in '%s' is '%s' instead of '%s'.\n",
+               line, s, t.toString(), Type.BOOL_TYPE.toString());
+            passed = false;
+		}
+
+	}
+
+
+	//----------------------------------------------------------------CHECAGEM DE TIPO----------------------------------------------------------------
 	
 	
-	
+	@Override
+	public AST visitAssignment(GoParser.AssignmentContext ctx){
+		
+		System.out.println(ctx.assign_op().getStop().getText());
+
+		return null;
+	}
 	
 	
 	

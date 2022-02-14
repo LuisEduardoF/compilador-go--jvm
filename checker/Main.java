@@ -56,11 +56,14 @@ public class Main {
 		SemanticChecker checker = new SemanticChecker();
 		checker.visit(tree);
 
+
+
 		// Saída final.
 		if (checker.hasPassed()) {
 			System.out.println("PARSE SUCCESSFUL!");
 			checker.printTables();
 		}
+		checker.printAST();
 	}
 
 }
