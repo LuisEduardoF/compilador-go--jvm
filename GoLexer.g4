@@ -67,6 +67,8 @@ FOR                    : 'for';
 IMPORT                 : 'import';
 RETURN                 : 'return';
 VAR                    : 'var';
+FALSE                  : 'false';
+TRUE                   : 'true';
 
 NIL_LIT                : 'nil';
 

@@ -299,20 +299,22 @@ operand: literal | operandName | L_PAREN expression R_PAREN;
 
 literal: basicLit | compositeLit | functionLit;
 
+bool_LIT: TRUE | FALSE;
+
 basicLit:
-	NIL_LIT		#nilType
-	| integer 		#intType
-	| string_ 		#stringType
+	NIL_LIT 			#nilType
+	| integer			#intType
+	| string_ 			#stringType
 	| FLOAT_LIT 		#floatType
-	| IMAGINARY_LIT 	#imaginaryType
-	| RUNE_LIT 		#runeType
-	;
+	| IMAGINARY_LIT		#imaginaryType
+	| RUNE_LIT			#runeType
+	| bool_LIT			#boolType;
 	
 integer:
 	DECIMAL_LIT
 	| BINARY_LIT
 	| OCTAL_LIT
-	| HEX_LIT
+	| HEX_LIT 
 	| IMAGINARY_LIT
 	| RUNE_LIT;
 
@@ -347,7 +349,9 @@ fieldDecl: (
 		| embeddedField
 	) tag = string_?;
 
-string_: RAW_STRING_LIT | INTERPRETED_STRING_LIT;
+string_: 
+	RAW_STRING_LIT
+	| INTERPRETED_STRING_LIT;
 
 embeddedField: STAR? typeName;
 

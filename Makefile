@@ -46,10 +46,10 @@ run:
 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $(FILE)
 
 runall:
-	-for FILE in $(IN)/*.go; do \
+	-for FILENAME in $(IN)/*.go; do \
 	 	cd $(GEN_PATH) && \
-	 	echo -e "\nRunning $${FILE}" && \
-	 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $${FILE}; \
+	 	echo -e "\nRunning $${FILENAME}" && \
+	 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $${FILENAME}; \
 	 	cd .. ; \
 	done;
 

@@ -4,6 +4,11 @@ package typing;
 // E um tipo composto: array.
 
 public enum Type {
+	NULL_TYPE {
+		public String toString() {
+	    		return "null";
+		}
+	},
 	BOOL_TYPE {
 		public String toString() {
 	    		return "bool";

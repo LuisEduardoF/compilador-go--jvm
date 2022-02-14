@@ -102,60 +102,96 @@ public class SemanticChecker extends GoParserBaseVisitor<Void> {
     }
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    	@Override
+    @Override
 	public Void visitNilType(GoParser.NilTypeContext ctx){
 		this.lastDeclType = Type.NULL_TYPE;
-    		return null; // Java says must return something even when Void	
+    	return null; // Java says must return something even when Void	
 	}
 	@Override
 	public Void visitIntType(GoParser.IntTypeContext ctx){
 		this.lastDeclType = Type.INT_TYPE;
-    		return null; // Java says must return something even when Void	
+    	return null; // Java says must return something even when Void	
 	}
 	@Override
 	public Void visitStringType(GoParser.StringTypeContext ctx){
 		this.lastDeclType = Type.STRING_TYPE;
-    		return null; // Java says must return something even when Void	
+    	return null; // Java says must return something even when Void	
 	}
 	@Override
 	public Void visitFloatType(GoParser.FloatTypeContext ctx){
 		this.lastDeclType = Type.FLOAT_TYPE;
-    		return null; // Java says must return something even when Void	
+    	return null; // Java says must return something even when Void	
 	}
 	@Override
 	public Void visitImaginaryType(GoParser.ImaginaryTypeContext ctx){
 		this.lastDeclType = Type.IMAGINARY_TYPE;
-    		return null; // Java says must return something even when Void	
+    	return null; // Java says must return something even when Void	
 	}
 	@Override
 	public Void visitRuneType(GoParser.RuneTypeContext ctx){
 		this.lastDeclType = Type.RUNE_TYPE;
-    		return null; // Java says must return something even when Void	
+    	return null; // Java says must return something even when Void	
 	}
 	@Override
 	public Void visitArrayType(GoParser.ArrayTypeContext ctx){
 		this.lastDeclType = Type.ARRAY_TYPE;
-    		return null; // Java says must return something even when Void
+    	return null; // Java says must return something even when Void
 	}
-	
+	@Override
+	public Void visitBoolType(GoParser.BoolTypeContext ctx){
+		this.lastDeclType = Type.BOOL_TYPE;
+    	return null; // Java says must return something even when Void
+	}
+
 	@Override
 	public Void visitVarDecl(GoParser.VarDeclContext ctx) {
-	// Visita a declaração de tipo para definir a variável lastDeclType.
-	String tipo = ctx.varSpec(0).type_().typeName().IDENTIFIER().getSymbol().getText();
-	System.out.println("Tipo: " + tipo);
-	
-	visit(ctx.varSpec(0).type_().typeName());
-	// Agora testa se a variável foi redeclarada.
-	newVar(ctx.varSpec(0).identifierList().IDENTIFIER(0).getSymbol());
-	return null; // Java says must return something even when Void
+		// Visita a declaração de tipo para definir a variável lastDeclType.
+		
+
+		int qtdVar = ctx.varSpec().size();
+		
+		for(int i = 0;i<qtdVar;i++){
+			try{
+				String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
+				
+				int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
+				
+
+				for(int j = 0;j < tam;j++){
+					System.out.println(tipo);
+					setLastDeclType(tipo);
+					//visit(ctx.varSpec(0).type_().typeName());
+					// Agora testa se a variável foi redeclarada.
+					newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol());
+				}
+			}
+				
+			catch(Exception e){
+				int tam = ctx.varSpec(i).expressionList().expression().size();
+				for(int k = 0;k < tam;k++){
+					visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
+		
+					newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
+				}
+			}
+
+		}
+
+		
+
+		return null; // Java says must return something even when Void
+	}
+	@Override
+	public Void visitShortVarDecl(GoParser.ShortVarDeclContext ctx){
+
+		int tam = ctx.expressionList().expression().size();
+		for(int i = 0;i < tam;i++){
+			visit(ctx.expressionList().expression(i).primaryExpr().operand().literal().basicLit());
+		
+			newVar(ctx.identifierList().IDENTIFIER(i).getSymbol());
+		}
+		
+		return null;
 	}
 	
 	
