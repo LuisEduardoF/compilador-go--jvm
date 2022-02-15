@@ -32,20 +32,21 @@ public class Main {
 		// O livro do ANTLR fala para criar um ANTLRInputStream,
 		// mas a partir da versão 4.7 essa classe foi deprecada.
 		// Esta é a forma atual para criação do stream.
+		
 		CharStream input = CharStreams.fromFileName(args[0]);
-
+		
 		// Cria um lexer que consome a entrada do CharStream.
 		GoLexer lexer = new GoLexer(input);
-
+		
 		// Cria um buffer de tokens vindos do lexer.
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
-
+		
 		// Cria um parser que consome os tokens do buffer.
 		GoParser parser = new GoParser(tokens);
-
+		
 		// Começa o processo de parsing na regra 'program'.
 		ParseTree tree = parser.sourceFile();
-
+		
 		if (parser.getNumberOfSyntaxErrors() != 0) {
 			// Houve algum erro sintático. Termina a compilação aqui.
 			return;
@@ -55,8 +56,6 @@ public class Main {
 		// fazer a análise.
 		SemanticChecker checker = new SemanticChecker();
 		checker.visit(tree);
-
-
 
 		// Saída final.
 		if (checker.hasPassed()) {

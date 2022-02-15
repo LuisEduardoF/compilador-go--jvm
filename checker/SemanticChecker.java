@@ -96,11 +96,11 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
   	
     @Override
     public AST visitSourceFile(GoParser.SourceFileContext ctx){
-
+    	
     	this.root = AST.newSubtree(ast.NodeKind.PROGRAM_NODE,Type.NO_TYPE);
     	//System.out.println(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
-    	visit(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
-    	
+    	//visit(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
+    	visit(ctx.functionDecl(0));
     	return this.root;
     }
 
@@ -268,7 +268,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	public AST visitAssignment(GoParser.AssignmentContext ctx){
 		
 		System.out.println(ctx.assign_op().getStop().getText());
-
+		
 		return null;
 	}
 	
