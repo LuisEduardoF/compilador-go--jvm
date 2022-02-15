@@ -8,6 +8,7 @@ func main() {
 	//fmt.Println("Hello, 世界")
 	//a = b+c;
 	b,a := 3,56;
+	var i int = 3;
 	//doze = 12;
 	//boole = true
 }
