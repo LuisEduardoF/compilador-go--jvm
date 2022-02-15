@@ -44,6 +44,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     private boolean passed = true;
 
     AST root;
+    AST auxTree;
 
     // Testa se o dado token foi declarado antes.
     void checkVar(Token token) {
@@ -100,7 +101,9 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     	this.root = AST.newSubtree(ast.NodeKind.PROGRAM_NODE,Type.NO_TYPE);
     	//System.out.println(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
     	//visit(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
+    
     	visit(ctx.functionDecl(0));
+
     	return this.root;
     }
 
@@ -183,20 +186,33 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				
 
 				for(int j = 0;j < tam;j++){
-					System.out.println(tipo);
+
+					AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 					setLastDeclType(tipo);
 					//visit(ctx.varSpec(0).type_().typeName());
-					// Agora testa se a variável foi redeclarada.
-					newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol());
+
+					//funcionando apenas para int
+					int valor = Integer.parseInt(ctx.varSpec(i).expressionList().expression(j).getStop().getText());
+
+					assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol()));
+					assing.addChild(new AST(ast.NodeKind.INT_VAL_NODE,valor,Type.INT_TYPE));
+					
+					System.out.println("entro1");
+					this.auxTree.addChild(assing);
+
+
 				}
 			}
 				
 			catch(Exception e){
 				int tam = ctx.varSpec(i).expressionList().expression().size();
 				for(int k = 0;k < tam;k++){
+					
 					visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
-		
+					
+
 					newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
+					
 				}
 			}
 
@@ -211,20 +227,21 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 		int tam = ctx.expressionList().expression().size();
 
+		
+
 		for(int i = 0;i < tam;i++){
 			//setar o tipo
+			AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 			visit(ctx.expressionList().expression(i).primaryExpr().operand().literal().basicLit());
 			
+			//por enquanto so funfa pra int
+			int valor = Integer.parseInt(ctx.expressionList().expression(i).getStop().getText());
 
-			AST aux = newVar(ctx.identifierList().IDENTIFIER(i).getSymbol());
-			System.out.println(aux);
-			if(aux != null){
-				this.root.addChild(aux);
-			}
-			else{
-				System.out.println("ERRO DE ALOCACAO");
-			}
+			assing.addChild(newVar(ctx.identifierList().IDENTIFIER(i).getSymbol()));
+			assing.addChild(new AST(ast.NodeKind.INT_VAL_NODE,valor,Type.INT_TYPE));
 			
+			
+			this.auxTree.addChild(assing);
 		}
 		
 		return null;
@@ -273,7 +290,16 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	}
 	
 	
-	
+	@Override
+	public AST visitBlock(GoParser.BlockContext ctx){
+
+		this.auxTree = (AST.newSubtree(ast.NodeKind.BLOCK_NODE,Type.NO_TYPE));
+		visit(ctx.statementList());
+		this.root.addChild(auxTree);
+		this.auxTree = null;
+		return null;
+
+	}
 	
 	
 	
