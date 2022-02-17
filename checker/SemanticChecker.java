@@ -1,9 +1,11 @@
 package checker;
 
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import parser.GoParser;
 import parser.GoParserBaseVisitor;
+import parser.GoParser.ExpressionContext;
 import tables.StrTable;
 import tables.VarTable;
 import typing.Type;
@@ -99,9 +101,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     	
     	this.root = AST.newSubtree(ast.NodeKind.PROGRAM_NODE, Type.NO_TYPE);
     	
-    	//System.out.println(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
-    	//visit(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
-    	
     	int tam = ctx.functionDecl().size();
     	for(int i = 0;i < tam;i++){
     		this.root.addChild(visit(ctx.functionDecl(i)));
@@ -110,7 +109,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     	return this.root;
     }
     
-    //----------------------------------------------------------------VERIFICADORES DE TIPO----------------------------------------------------------------
     void setLastDeclType(String tipo){
     	if(tipo.equals("bool")){
 			this.lastDeclType = Type.BOOL_TYPE;
@@ -168,22 +166,17 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     	return null; // Java says must return something even when Void
 	}
 
-
-
-
-	//----------------------------------------------------------------CRIAÇAO DE VARIAVEIS----------------------------------------------------------------	
 	private boolean testExpressionList(GoParser.VarDeclContext ctx, int i) {
 		try {
 			visit(ctx.varSpec(i).expressionList());
 			return true;
 		}catch(Exception e) {
-			System.out.println("Nao encontrei expression list");
+			System.out.println("[testExpressionList] Nao encontrei expression list");
 			return false;
 		}
 	}
 	
 	private AST retornaFilhoValor(String s){
-		
 		if(this.lastDeclType == Type.BOOL_TYPE){
 			
 			return new AST(ast.NodeKind.BOOL_VAL_NODE,Boolean.parseBoolean(s),Type.BOOL_TYPE);
@@ -205,31 +198,25 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		return null;
 		
 	}
+	
 	@Override
 	public AST visitVarDecl(GoParser.VarDeclContext ctx) {
 		// Visita a declaração de tipo para definir a variável lastDeclType.
-		
-
 		int qtdVar = ctx.varSpec().size();
 		
 		AST father = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 		
 		for(int i = 0;i<qtdVar;i++){
 			if(this.testExpressionList(ctx, i) == true) {
-				//tem valor
 				try{
-					
 					String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
 					
 					int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
-					
 
 					for(int j = 0;j < tam;j++){
 						AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 						setLastDeclType(tipo);
-						//visit(ctx.varSpec(0).type_().typeName());
 						
-						//funcionando apenas para int
 						AST valor = retornaFilhoValor(ctx.varSpec(i).expressionList().expression(j).getStop().getText());
 						
 						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol()));
@@ -248,15 +235,12 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol()));
 						assing.addChild(valor);
 						
-						father.addChild(assing);
-						
+						father.addChild(assing);	
 					}
 				}
 
 			}else {
-				// nao tem valor
 				try{
-					
 					String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
 					
 					int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
@@ -264,15 +248,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 					for(int j = 0;j < tam;j++){
 						setLastDeclType(tipo);
-						//visit(ctx.varSpec(0).type_().typeName());
-						
-						//funcionando apenas para int
-						//int valor = Integer.parseInt(ctx.varSpec(i).expressionList().expression(j).getStop().getText());
-						
 						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol());
-					
-						
-						
 					}
 				}
 					
@@ -280,26 +256,19 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 					int tam = ctx.varSpec(i).expressionList().expression().size();
 					for(int k = 0;k < tam;k++){
 						visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
-						
 						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
-						
-						
 					}
 				}
 			} 
 			
 		}
 		
-
-		
-
-		return father; // Java says must return something even when Void
+		return father;
 	}
+	
 	@Override
 	public AST visitShortVarDecl(GoParser.ShortVarDeclContext ctx){
-
 		int tam = ctx.expressionList().expression().size();
-		
 		AST father = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 		
 		for(int i = 0;i < tam;i++){
@@ -307,7 +276,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			visit(ctx.expressionList().expression(i).primaryExpr().operand().literal().basicLit());
 			
 			AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
-			//por enquanto so funfa pra int
 			AST valor = retornaFilhoValor(ctx.expressionList().expression(i).getStop().getText());
 
 			assing.addChild(newVar(ctx.identifierList().IDENTIFIER(i).getSymbol()));
@@ -317,24 +285,16 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			father.addChild(assing);
 		}
 		
-		// System.out.println("Imprimindo father");
-		// AST.printDot(father, vt);
-		
 		return father;
-	}
-	
-	//----------------------------------------------------------------CHECAGEM DE TIPO----------------------------------------------------------------
-	
+	}	
 	
 	private void typeError(int line, String operation, Type t1,Type t2){
-		System.out.printf("SEMANTIC ERROS (%d): incopatible types %s and %s for operator %s",line,t1.toString(),t2.toString(),operation);
+		System.out.printf("[typeError] SEMANTIC ERROS (%d): incopatible types %s and %s for operator %s",line,t1.toString(),t2.toString(),operation);
 		passed = false;
 	}
 
 
 	private void checkAssingTypes(int line,Type left,Type right){
-
-
 		if(left == Type.FLOAT_TYPE && !(right == Type.INT_TYPE || right == Type.FLOAT_TYPE || right == Type.RUNE_TYPE)){
 			typeError(line,"=",left,right);
 		}
@@ -344,27 +304,60 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	}
 
 	private void checkBoolExpr(int line, String s, Type t){
-
 		if(t != Type.BOOL_TYPE){
-			System.out.printf("SEMANTIC ERROR (%d): conditional expression in '%s' is '%s' instead of '%s'.\n",
+			System.out.printf("[checkBoolExpr] SEMANTIC ERROR (%d): conditional expression in '%s' is '%s' instead of '%s'.\n",
                line, s, t.toString(), Type.BOOL_TYPE.toString());
             passed = false;
 		}
 
 	}
-
-
-	//----------------------------------------------------------------CHECAGEM DE TIPO----------------------------------------------------------------
 	
+	private AST makeTreeAssignment(GoParser.ExpressionContext ctx, AST ramo) {
+		int numFilhos = ctx.getChildCount();
+		if(numFilhos == 3) {
+			// Expressao composta
+			String operacao = ctx.getChild(1).getText();
+			AST valor = new AST(ast.NodeKind.STR_VAL_NODE, operacao, Type.STRING_TYPE);
+			
+			AST left = this.makeTreeAssignment(ctx.expression(0), valor);
+			valor.addChild(left);
+			
+			AST right = this.makeTreeAssignment(ctx.expression(1), valor);
+			valor.addChild(right);
+			
+			return valor;
+		}else {
+			// Expressao simples
+			int numFilhos2 = ctx.primaryExpr().operand().getChildCount();
+			if(numFilhos2 == 1) {
+				String operando = ctx.getStop().getText();
+				System.out.println(operando);
+				
+				return new AST(ast.NodeKind.STR_VAL_NODE, operando, Type.STRING_TYPE);
+			}else {
+				return this.makeTreeAssignment(ctx.primaryExpr().operand().expression(), ramo);
+			}
+		}
+	}
+	
+	public AST fazPai(AST senpai) {
+		AST compai = (AST.newSubtree(ast.NodeKind.PROGRAM_NODE,Type.NO_TYPE));
+		compai.addChild(senpai);
+		return compai;
+	}
 	
 	@Override
 	public AST visitAssignment(GoParser.AssignmentContext ctx){
-		
-		System.out.println(ctx.assign_op().getStop().getText());
-		
-		return null;
+		String op = ctx.assign_op().getStop().getText();
+		AST assignTree = (AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE));
+		for(int i = 0; i < 2; i++) {
+			GoParser.ExpressionContext expressao = ctx.expressionList(i).expression(0);
+			assignTree.addChild(this.makeTreeAssignment(expressao, assignTree));
+		}
+
+		AST.printDot(assignTree, vt);
+		return fazPai(assignTree);
 	}
-	
 	
 	@Override
 	public AST visitBlock(GoParser.BlockContext ctx){
@@ -378,69 +371,10 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	    		for(AST child: teste.getChildren()) blockTree.addChild(child);
 	    	}
 		}	catch(Exception e) {
-			System.out.printf("Caiu exception statementList [%s]\n",e.toString());
-			// Nao apresenta statementList
+			System.out.printf("[visitBlock] Caiu exception statementList [%s]\n",e.toString());
 		}
 		
 		return blockTree;
 
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-    
-
-    /* 
-    // Visita a regra var_decl: type_spec ID SEMI
-    @Override
-    public Void visitVar_decl(EZParser.Var_declContext ctx) {
-    	// Visita a declaração de tipo para definir a variável lastDeclType.
-    	visit(ctx.type_spec());
-    	// Agora testa se a variável foi redeclarada.
-    	newVar(ctx.ID().getSymbol());
-    	return null; // Java says must return something even when Void
-    }
-
-    // Visita a regra assign_stmt: ID ASSIGN expr SEMI
-	@Override
-	public Void visitAssign_stmt(Assign_stmtContext ctx) {
-		// Visita recursivamente a expressão da direita para procurar erros. 
-		visit(ctx.expr());
-		// Verifica se a variável a ser atribuída foi declarada.
-		checkVar(ctx.ID().getSymbol());
-		return null; // Java says must return something even when Void
-	}
-
-	// Visita a regra read_stmt: READ ID SEMI
-	@Override
-	public Void visitRead_stmt(Read_stmtContext ctx) {
-		// Verifica se a variável que vai receber o valor lido foi declarada.
-		checkVar(ctx.ID().getSymbol());
-		return null; // Java says must return something even when Void
-	}
-
-	@Override
-	// Visita a regra expr: STR_VAL
-	// Valem os mesmos comentários do método visitBoolType.
-	public Void visitExprStrVal(ExprStrValContext ctx) {
-		// Adiciona a string na tabela de strings.
-		st.add(ctx.STR_VAL().getText());
-		return null; // Java says must return something even when Void
-	}
-
-	@Override
-	// Visita a regra expr: ID
-	// Valem os mesmos comentários do método visitBoolType.
-	public Void visitExprId(ExprIdContext ctx) {
-		// Verifica se a variável usada na expressão foi declarada.
-		checkVar(ctx.ID().getSymbol());
-		return null; // Java says must return something even when Void
-	}
-	*/
-	
 }

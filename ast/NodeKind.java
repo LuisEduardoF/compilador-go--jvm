@@ -106,37 +106,6 @@ public enum NodeKind {
 		public String toString() {
             return "write";
         }
-	},
-
-    B2I_NODE { // Type conversion.
-		public String toString() {
-            return "B2I";
-        }
-	},
-    B2R_NODE {
-		public String toString() {
-            return "B2R";
-        }
-	},
-    B2S_NODE {
-		public String toString() {
-            return "B2S";
-        }
-	},
-    I2R_NODE {
-		public String toString() {
-            return "I2R";
-        }
-	},
-    I2S_NODE {
-		public String toString() {
-            return "I2S";
-        }
-	},
-    R2S_NODE {
-		public String toString() {
-            return "R2S";
-        }
 	};
 	
 	public static boolean hasData(NodeKind kind) {
