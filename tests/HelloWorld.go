@@ -4,13 +4,23 @@ package main
 
 import "fmt"
 
+func main2(){
+	x := 3
+	var sdj string = "kkkkkkkkkkkkkkk"
+	kds, djsdhsjhdsk := 3.14, 3
+	var trtr int;
+}
+
+
 func main() {
-	//fmt.Println("Hello, 世界")
-	//a = b+c;
-	b,a := 33,56;
-	var i int = 3;
-	a = 32;
-	//doze = 12;
-	//boole = true
+	var a int = 1        // +
+	var b, c float64 // + strange extra levels
+	var (
+		g       int
+		h, i, j = 2, 3, 4
+	)
+	var cfsdfd bool = true
+	var kslfajdks float64 = 3.14
+	var dsjk string = "kkkkkk"
 }
 

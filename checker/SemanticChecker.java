@@ -44,7 +44,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     private boolean passed = true;
 
     AST root;
-    AST auxTree;
 
     // Testa se o dado token foi declarado antes.
     void checkVar(Token token) {
@@ -98,16 +97,18 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     @Override
     public AST visitSourceFile(GoParser.SourceFileContext ctx){
     	
-    	this.root = AST.newSubtree(ast.NodeKind.PROGRAM_NODE,Type.NO_TYPE);
+    	this.root = AST.newSubtree(ast.NodeKind.PROGRAM_NODE, Type.NO_TYPE);
+    	
     	//System.out.println(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
     	//visit(ctx.functionDecl(0).block().statementList().statement(0).simpleStmt().shortVarDecl());
-    
-    	visit(ctx.functionDecl(0));
-
+    	
+    	int tam = ctx.functionDecl().size();
+    	for(int i = 0;i < tam;i++){
+    		this.root.addChild(visit(ctx.functionDecl(i)));
+    	}
+    	
     	return this.root;
     }
-
-    
     
     //----------------------------------------------------------------VERIFICADORES DE TIPO----------------------------------------------------------------
     void setLastDeclType(String tipo){
@@ -170,7 +171,40 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 
 
-	//----------------------------------------------------------------CRIAÇAO DE VARIAVEIS----------------------------------------------------------------
+	//----------------------------------------------------------------CRIAÇAO DE VARIAVEIS----------------------------------------------------------------	
+	private boolean testExpressionList(GoParser.VarDeclContext ctx, int i) {
+		try {
+			visit(ctx.varSpec(i).expressionList());
+			return true;
+		}catch(Exception e) {
+			System.out.println("Nao encontrei expression list");
+			return false;
+		}
+	}
+	
+	private AST retornaFilhoValor(String s){
+		
+		if(this.lastDeclType == Type.BOOL_TYPE){
+			
+			return new AST(ast.NodeKind.BOOL_VAL_NODE,Boolean.parseBoolean(s),Type.BOOL_TYPE);
+			
+		}else if(this.lastDeclType == Type.INT_TYPE){
+			
+			return new AST(ast.NodeKind.INT_VAL_NODE, Integer.parseInt(s), Type.INT_TYPE);
+					
+		}else if(this.lastDeclType == Type.STRING_TYPE){
+			
+			return new AST(ast.NodeKind.STR_VAL_NODE, s, Type.STRING_TYPE);
+			
+		}else if(this.lastDeclType == Type.FLOAT_TYPE){
+			
+			return new AST(ast.NodeKind.REAL_VAL_NODE, Float.parseFloat(s), Type.FLOAT_TYPE);
+			
+		}
+		
+		return null;
+		
+	}
 	@Override
 	public AST visitVarDecl(GoParser.VarDeclContext ctx) {
 		// Visita a declaração de tipo para definir a variável lastDeclType.
@@ -178,73 +212,115 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 		int qtdVar = ctx.varSpec().size();
 		
+		AST father = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
+		
 		for(int i = 0;i<qtdVar;i++){
-			try{
-				String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
-				
-				int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
-				
-
-				for(int j = 0;j < tam;j++){
-
-					AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
-					setLastDeclType(tipo);
-					//visit(ctx.varSpec(0).type_().typeName());
-
-					//funcionando apenas para int
-					int valor = Integer.parseInt(ctx.varSpec(i).expressionList().expression(j).getStop().getText());
-
-					assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol()));
-					assing.addChild(new AST(ast.NodeKind.INT_VAL_NODE,valor,Type.INT_TYPE));
+			if(this.testExpressionList(ctx, i) == true) {
+				//tem valor
+				try{
 					
-					System.out.println("entro1");
-					this.auxTree.addChild(assing);
+					String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
+					
+					int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
+					
 
-
+					for(int j = 0;j < tam;j++){
+						AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
+						setLastDeclType(tipo);
+						//visit(ctx.varSpec(0).type_().typeName());
+						
+						//funcionando apenas para int
+						AST valor = retornaFilhoValor(ctx.varSpec(i).expressionList().expression(j).getStop().getText());
+						
+						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol()));
+						assing.addChild(valor);
+						
+						father.addChild(assing);
+					}
+				}catch(Exception e){
+					int tam = ctx.varSpec(i).expressionList().expression().size();
+					for(int k = 0;k < tam;k++){
+						AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
+						visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
+						
+						AST valor = retornaFilhoValor(ctx.varSpec(i).expressionList().expression(k).getStop().getText());
+						
+						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol()));
+						assing.addChild(valor);
+						
+						father.addChild(assing);
+						
+					}
 				}
-			}
-				
-			catch(Exception e){
-				int tam = ctx.varSpec(i).expressionList().expression().size();
-				for(int k = 0;k < tam;k++){
+
+			}else {
+				// nao tem valor
+				try{
 					
-					visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
+					String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
+					
+					int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
 					
 
-					newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
+					for(int j = 0;j < tam;j++){
+						setLastDeclType(tipo);
+						//visit(ctx.varSpec(0).type_().typeName());
+						
+						//funcionando apenas para int
+						//int valor = Integer.parseInt(ctx.varSpec(i).expressionList().expression(j).getStop().getText());
+						
+						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol());
 					
+						
+						
+					}
 				}
-			}
-
+					
+				catch(Exception e){
+					int tam = ctx.varSpec(i).expressionList().expression().size();
+					for(int k = 0;k < tam;k++){
+						visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
+						
+						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
+						
+						
+					}
+				}
+			} 
+			
 		}
+		
 
 		
 
-		return null; // Java says must return something even when Void
+		return father; // Java says must return something even when Void
 	}
 	@Override
 	public AST visitShortVarDecl(GoParser.ShortVarDeclContext ctx){
 
 		int tam = ctx.expressionList().expression().size();
-
 		
-
+		AST father = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
+		
 		for(int i = 0;i < tam;i++){
 			//setar o tipo
-			AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 			visit(ctx.expressionList().expression(i).primaryExpr().operand().literal().basicLit());
 			
+			AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 			//por enquanto so funfa pra int
-			int valor = Integer.parseInt(ctx.expressionList().expression(i).getStop().getText());
+			AST valor = retornaFilhoValor(ctx.expressionList().expression(i).getStop().getText());
 
 			assing.addChild(newVar(ctx.identifierList().IDENTIFIER(i).getSymbol()));
-			assing.addChild(new AST(ast.NodeKind.INT_VAL_NODE,valor,Type.INT_TYPE));
+			assing.addChild(valor);
 			
 			
-			this.auxTree.addChild(assing);
+			father.addChild(assing);
 		}
 		
-		return null;
+		// System.out.println("Imprimindo father");
+		// AST.printDot(father, vt);
+		
+		return father;
 	}
 	
 	//----------------------------------------------------------------CHECAGEM DE TIPO----------------------------------------------------------------
@@ -292,12 +368,21 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	
 	@Override
 	public AST visitBlock(GoParser.BlockContext ctx){
+		AST blockTree = (AST.newSubtree(ast.NodeKind.BLOCK_NODE,Type.NO_TYPE));
+		try {		
+	    	int tam = ctx.statementList().statement().size();
+	    	
+	    	for(int i = 0;i < tam;i++){
+	    		AST teste = visit(ctx.statementList().statement(i));	
 
-		this.auxTree = (AST.newSubtree(ast.NodeKind.BLOCK_NODE,Type.NO_TYPE));
-		visit(ctx.statementList());
-		this.root.addChild(auxTree);
-		this.auxTree = null;
-		return null;
+	    		for(AST child: teste.getChildren()) blockTree.addChild(child);
+	    	}
+		}	catch(Exception e) {
+			System.out.printf("Caiu exception statementList [%s]\n",e.toString());
+			// Nao apresenta statementList
+		}
+		
+		return blockTree;
 
 	}
 	

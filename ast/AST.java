@@ -18,27 +18,41 @@ public class AST {
 	public  final NodeKind kind;
 	public  final int intData;
 	public  final float floatData;
+	public  final String stringData;
+	public  final boolean boolData;
 	public  final Type type;
 	private final List<AST> children; // Privado para que a manipulação da lista seja controlável.
 
 	// Construtor completo para poder tornar todos os campos finais.
 	// Privado porque não queremos os dois campos 'data' preenchidos ao mesmo tempo.
-	private AST(NodeKind kind, int intData, float floatData, Type type) {
+	private AST(NodeKind kind, int intData, float floatData, String stringData, boolean boolData, Type type) {
 		this.kind = kind;
 		this.intData = intData;
 		this.floatData = floatData;
-		this.type = type;
+		this.stringData = stringData;
+		this.boolData = boolData;
+		this.type = type; 
 		this.children = new ArrayList<AST>();
 	}
 
 	// Cria o nó com um dado inteiro.
 	public AST(NodeKind kind, int intData, Type type) {
-		this(kind, intData, 0.0f, type);
+		this(kind, intData, 0.0f, "", false, type);
 	}
 
 	// Cria o nó com um dado float.
 	public AST(NodeKind kind, float floatData, Type type) {
-		this(kind, 0, floatData, type);
+		this(kind, 0, floatData, "", false, type);
+	}
+	
+	// Cria o nó com um dado String.
+	public AST(NodeKind kind, String stringData, Type type) {
+		this(kind, 0, 0.0f, stringData.replaceAll("\"", ""), false, type);
+	}
+	
+	// Cria o nó com um dado boolean.
+	public AST(NodeKind kind, boolean booleanData, Type type) {
+		this(kind, 0, 0.0f, "", booleanData, type);
 	}
 
 	// Adiciona um novo filho ao nó.
@@ -62,6 +76,10 @@ public class AST {
 	    	node.addChild(child);
 	    }
 	    return node;
+	}
+	
+	public List<AST> getChildren(){
+		return this.children;
 	}
 
 	// Variáveis internas usadas para geração da saída em DOT.
@@ -87,9 +105,14 @@ public class AST {
 	        if (this.kind == NodeKind.REAL_VAL_NODE) {
 	        	System.err.printf("%.2f", this.floatData);
 	        } else if (this.kind == NodeKind.STR_VAL_NODE) {
-	        	System.err.printf("@%d", this.intData);
-	        } else {
+	        	System.err.print(this.stringData);
+	        } else if (this.kind == NodeKind.INT_VAL_NODE) {
 	        	System.err.printf("%d", this.intData);
+	        } else if (this.kind == NodeKind.BOOL_VAL_NODE){
+	        	if(this.boolData) System.err.print("true");
+	        	else System.err.print("false");
+	        } else {
+	        	System.err.print(this.intData);
 	        }
 	    }
 	    System.err.printf("\"];\n");
