@@ -3,12 +3,11 @@ package main
 import "fmt"
 
 func main() {
-	a, b := 1, 2;
-	var c int;
+	a := 1;
+	b := 3;
+	var c float64;
 	var d int;
 	var e int;
 	
-	c = a + b + 3;
-	d = c/4;
-	e = ((a*b)/d)*3;
+	c = (a + b)/5;
 }

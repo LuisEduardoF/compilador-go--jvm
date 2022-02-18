@@ -171,7 +171,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			visit(ctx.varSpec(i).expressionList());
 			return true;
 		}catch(Exception e) {
-			System.out.println("[testExpressionList] Nao encontrei expression list");
+			// System.out.println("[testExpressionList] Nao encontrei expression list");
 			return false;
 		}
 	}
@@ -309,7 +309,49 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
                line, s, t.toString(), Type.BOOL_TYPE.toString());
             passed = false;
 		}
-
+	}
+	
+	private boolean testaConstante(GoParser.ExpressionContext ctx) {
+		GoParser.LiteralContext literal = ctx.primaryExpr().operand().literal();
+		if(literal != null) return true;
+		else return false;
+	}
+	
+	private Type defineTipoDadosOperacao(GoParser.ExpressionContext ctx) {
+		// Vamos considerar que o tipo da operacao sera o tipo do operando mais a direita
+		
+		// Pegando expression(1) vamos para o operando da direita
+		GoParser.OperandContext operandContext = ctx.expression(1).primaryExpr().operand();
+		try {
+			// Se depois de operandContext conseguirmos ir para operandName, temos uma variavel
+			String operandoMaisADireita = operandContext.operandName().getChild(0).getText();
+			
+			int idx = vt.lookupVar(operandoMaisADireita);
+			
+			if(idx == -1) return null; // Variavel mais a direita nao se encontra em vt (nao declarada)
+			else return this.vt.getType(idx); // Variavel encontrada na vt, retorna o tipo dela
+		}catch(Exception e) {
+			// Se depois de operandContext conseguirmos ir para literal, temos uma constante
+			String constante = operandContext.getStop().getText();
+			
+			// [Marretagem pra saber se a constante eh float ou int]
+			if(constante.contains(".")) return Type.FLOAT_TYPE;
+			else return Type.INT_TYPE;
+		}
+	}
+	
+	private ast.NodeKind defineTipoOperacao(String operacao) {
+		if(operacao.equals("+")) {
+			return ast.NodeKind.PLUS_NODE;
+		}else if(operacao.equals("-")) {
+			return ast.NodeKind.MINUS_NODE;
+		}else if(operacao.equals("*")) {
+			return ast.NodeKind.TIMES_NODE;
+		}else if(operacao.equals("/")) {
+			return ast.NodeKind.OVER_NODE;
+		}
+		
+		return null;
 	}
 	
 	private AST makeTreeAssignment(GoParser.ExpressionContext ctx, AST ramo) {
@@ -317,9 +359,24 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		if(numFilhos == 3) {
 			// Expressao composta
 			String operacao = ctx.getChild(1).getText();
-			AST valor = new AST(ast.NodeKind.STR_VAL_NODE, operacao, Type.STRING_TYPE);
+			Type tipoDadosOperacao = this.defineTipoDadosOperacao(ctx);
+			
+			if(tipoDadosOperacao == null) {
+				System.out.println("[ERRO] Variavel nao declarada em uma operacao");
+				passed = false;
+				return null;
+			}
+			
+			AST valor = AST.newSubtree(this.defineTipoOperacao(operacao), tipoDadosOperacao);
 			
 			AST left = this.makeTreeAssignment(ctx.expression(0), valor);
+			
+			if(left.type != valor.type) {
+				System.out.println("[ERRO] Operacao entre tipos de dados diferentes");
+				passed = false;
+				return null;
+			}
+			
 			valor.addChild(left);
 			
 			AST right = this.makeTreeAssignment(ctx.expression(1), valor);
@@ -327,13 +384,22 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			
 			return valor;
 		}else {
-			// Expressao simples
 			int numFilhos2 = ctx.primaryExpr().operand().getChildCount();
 			if(numFilhos2 == 1) {
-				String operando = ctx.getStop().getText();
-				System.out.println(operando);
-				
-				return new AST(ast.NodeKind.STR_VAL_NODE, operando, Type.STRING_TYPE);
+				// Expressao simples				
+				if(!this.testaConstante(ctx)) {
+					// O operando eh uma variavel					
+					Token token = ctx.getStop();
+					this.checkVar(token);
+										
+					int idx = vt.lookupVar(token.getText());
+										
+					return new AST(ast.NodeKind.VAR_USE_NODE, idx, this.vt.getType(idx));
+				}else {
+					// O operando eh uma constante
+					String constante = ctx.getStop().getText();
+					return this.retornaFilhoValor(constante);
+				}	
 			}else {
 				return this.makeTreeAssignment(ctx.primaryExpr().operand().expression(), ramo);
 			}
@@ -348,14 +414,15 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	
 	@Override
 	public AST visitAssignment(GoParser.AssignmentContext ctx){
-		String op = ctx.assign_op().getStop().getText();
 		AST assignTree = (AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE));
+		
 		for(int i = 0; i < 2; i++) {
 			GoParser.ExpressionContext expressao = ctx.expressionList(i).expression(0);
-			assignTree.addChild(this.makeTreeAssignment(expressao, assignTree));
+			AST ramo = this.makeTreeAssignment(expressao, assignTree);
+			if(ramo != null) assignTree.addChild(ramo);
+			else return null;
 		}
 
-		AST.printDot(assignTree, vt);
 		return fazPai(assignTree);
 	}
 	
@@ -371,7 +438,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	    		for(AST child: teste.getChildren()) blockTree.addChild(child);
 	    	}
 		}	catch(Exception e) {
-			System.out.printf("[visitBlock] Caiu exception statementList [%s]\n",e.toString());
+			// System.out.printf("[visitBlock] Caiu exception statementList [%s]\n",e.toString());
 		}
 		
 		return blockTree;

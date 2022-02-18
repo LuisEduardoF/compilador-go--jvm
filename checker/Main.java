@@ -61,8 +61,10 @@ public class Main {
 		if (checker.hasPassed()) {
 			System.out.println("PARSE SUCCESSFUL!");
 			checker.printTables();
+			checker.printAST();
+		}else {
+			System.out.println("PARSE FAILED!");
 		}
-		checker.printAST();
 	}
 
 }
