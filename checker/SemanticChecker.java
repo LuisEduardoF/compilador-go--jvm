@@ -217,23 +217,47 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 						AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 						setLastDeclType(tipo);
 						
-						AST valor = retornaFilhoValor(ctx.varSpec(i).expressionList().expression(j).getStop().getText());
-						
+
 						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol()));
+						
+
+						AST valor = makeTreeAssignment(ctx.varSpec(i).expressionList().expression(j),assing);
 						assing.addChild(valor);
+
+						System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
+						if(assing.getChild(0).type != assing.getChild(1).type){
+							int line = ctx.getStop().getLine(); //qual a linha?
+							typeError(line,valor.kind.toString(),assing.getChild(0).type,assing.getChild(1).type);
+							return null;
+						}
+
+						
 						
 						father.addChild(assing);
 					}
 				}catch(Exception e){
+
 					int tam = ctx.varSpec(i).expressionList().expression().size();
+					String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
+					// setLastDeclType(tipo);
 					for(int k = 0;k < tam;k++){
 						AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
-						visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
-						
-						AST valor = retornaFilhoValor(ctx.varSpec(i).expressionList().expression(k).getStop().getText());
+						setLastDeclType(tipo);
+						//visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
 						
 						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol()));
+
+						AST valor = makeTreeAssignment(ctx.varSpec(i).expressionList().expression(k),assing);
 						assing.addChild(valor);
+
+						System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
+						if(assing.getChild(0).type != assing.getChild(1).type){
+							int line = ctx.getStop().getLine(); //qual a linha?
+							typeError(line,valor.kind.toString(),assing.getChild(0).type,assing.getChild(1).type);
+							return null;
+						}
+
+						
 						
 						father.addChild(assing);	
 					}
@@ -273,12 +297,17 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		
 		for(int i = 0;i < tam;i++){
 			//setar o tipo
-			visit(ctx.expressionList().expression(i).primaryExpr().operand().literal().basicLit());
+			visit(ctx.expressionList().expression(i));
 			
 			AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
-			AST valor = retornaFilhoValor(ctx.expressionList().expression(i).getStop().getText());
+			//AST valor = retornaFilhoValor(ctx.expressionList().expression(i).getStop().getText());
+
+			AST valor = makeTreeAssignment(ctx.expressionList().expression(i),father);
 
 			assing.addChild(newVar(ctx.identifierList().IDENTIFIER(i).getSymbol()));
+
+			
+
 			assing.addChild(valor);
 			
 			
@@ -289,27 +318,16 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	}	
 	
 	private void typeError(int line, String operation, Type t1,Type t2){
-		System.out.printf("[typeError] SEMANTIC ERROS (%d): incopatible types %s and %s for operator %s",line,t1.toString(),t2.toString(),operation);
+		System.out.printf("[typeError] SEMANTIC ERROR (%d): incopatible types %s and %s for operator %s\n",line,t1.toString(),t2.toString(),operation);
+		passed = false;
+	}
+
+	private void varNotDeclError(int line, String varName){
+		System.out.printf("[varNotDeclError] SEMANTIC ERROR (%d): variable %s not declared\n",line,varName);
 		passed = false;
 	}
 
 
-	private void checkAssingTypes(int line,Type left,Type right){
-		if(left == Type.FLOAT_TYPE && !(right == Type.INT_TYPE || right == Type.FLOAT_TYPE || right == Type.RUNE_TYPE)){
-			typeError(line,"=",left,right);
-		}
-		else if(right != left){
-			typeError(line,"=",left,right);
-		}
-	}
-
-	private void checkBoolExpr(int line, String s, Type t){
-		if(t != Type.BOOL_TYPE){
-			System.out.printf("[checkBoolExpr] SEMANTIC ERROR (%d): conditional expression in '%s' is '%s' instead of '%s'.\n",
-               line, s, t.toString(), Type.BOOL_TYPE.toString());
-            passed = false;
-		}
-	}
 	
 	private boolean testaConstante(GoParser.ExpressionContext ctx) {
 		GoParser.LiteralContext literal = ctx.primaryExpr().operand().literal();
@@ -359,35 +377,49 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		if(numFilhos == 3) {
 			// Expressao composta
 			String operacao = ctx.getChild(1).getText();
-			Type tipoDadosOperacao = this.defineTipoDadosOperacao(ctx);
+
 			
-			if(tipoDadosOperacao == null) {
-				System.out.println("[ERRO] Variavel nao declarada em uma operacao");
-				passed = false;
-				return null;
-			}
+			visit(ctx.expression(0));
+
+			Type tipoDadosOperacao = this.lastDeclType;
 			
 			AST valor = AST.newSubtree(this.defineTipoOperacao(operacao), tipoDadosOperacao);
 			
 			AST left = this.makeTreeAssignment(ctx.expression(0), valor);
-			
-			if(left.type != valor.type) {
-				System.out.println("[ERRO] Operacao entre tipos de dados diferentes");
-				passed = false;
-				return null;
-			}
-			
-			valor.addChild(left);
+
 			
 			AST right = this.makeTreeAssignment(ctx.expression(1), valor);
+
+			System.out.println(left.kind+" "+right.kind);
+
+			if((left.type == Type.FLOAT_TYPE || right.type == Type.FLOAT_TYPE) && (right.type == Type.INT_TYPE || left.type == Type.INT_TYPE)){
+				valor.type = Type.FLOAT_TYPE;
+
+				if(left.kind != ast.NodeKind.VAR_USE_NODE && left.kind != ast.NodeKind.VAR_DECL_NODE)
+					left.type = Type.FLOAT_TYPE;
+				if(right.kind != ast.NodeKind.VAR_USE_NODE && right.kind != ast.NodeKind.VAR_DECL_NODE)
+					right.type = Type.FLOAT_TYPE;
+
+			}
+			System.out.println(left.type+" "+right.type);
+			if(left.type != right.type) {
+				int line = ctx.getStop().getLine(); //qual a linha?
+				typeError(line,operacao,left.type,right.type);
+				return null;
+			}
+
+			valor.addChild(left);
 			valor.addChild(right);
-			
+
 			return valor;
 		}else {
 			int numFilhos2 = ctx.primaryExpr().operand().getChildCount();
+
 			if(numFilhos2 == 1) {
-				// Expressao simples				
+				// Expressao simples
+				
 				if(!this.testaConstante(ctx)) {
+					
 					// O operando eh uma variavel					
 					Token token = ctx.getStop();
 					this.checkVar(token);
@@ -397,7 +429,11 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 					return new AST(ast.NodeKind.VAR_USE_NODE, idx, this.vt.getType(idx));
 				}else {
 					// O operando eh uma constante
+					visit(ctx.primaryExpr());	
 					String constante = ctx.getStop().getText();
+					if(constante.contains(".")){
+						this.lastDeclType = Type.FLOAT_TYPE;
+					}
 					return this.retornaFilhoValor(constante);
 				}	
 			}else {
@@ -415,13 +451,39 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	@Override
 	public AST visitAssignment(GoParser.AssignmentContext ctx){
 		AST assignTree = (AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE));
-		
+		Type primeiroTipo = null;
 		for(int i = 0; i < 2; i++) {
 			GoParser.ExpressionContext expressao = ctx.expressionList(i).expression(0);
+
+			String vari = expressao.getStop().getText();
+
+			if(this.vt.lookupVar(vari) == -1 && i == 0){
+				String varName = "Teste";
+				int line = 10;
+				varNotDeclError(line,varName);
+				return null;
+			}
+
 			AST ramo = this.makeTreeAssignment(expressao, assignTree);
+			
+			visit(expressao);
+
+			if(i == 0) primeiroTipo = this.lastDeclType;
+
+			if(primeiroTipo != ramo.type && i == 1){
+				int line = 11; 
+				typeError(line,ramo.kind.toString(),primeiroTipo,ramo.type);
+				return null;
+			}
+
+			System.out.println(this.lastDeclType);
+			
+
 			if(ramo != null) assignTree.addChild(ramo);
 			else return null;
 		}
+
+		
 
 		return fazPai(assignTree);
 	}

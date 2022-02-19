@@ -20,7 +20,7 @@ public class AST {
 	public  final float floatData;
 	public  final String stringData;
 	public  final boolean boolData;
-	public  final Type type;
+	public   Type type;
 	private final List<AST> children; // Privado para que a manipulação da lista seja controlável.
 
 	// Construtor completo para poder tornar todos os campos finais.
@@ -80,6 +80,10 @@ public class AST {
 	
 	public List<AST> getChildren(){
 		return this.children;
+	}
+
+	public Type getType(){
+		return this.type;
 	}
 
 	// Variáveis internas usadas para geração da saída em DOT.
