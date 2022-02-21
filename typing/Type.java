@@ -29,16 +29,6 @@ public enum Type {
 	    		return "float";
 		}
 	},
-	IMAGINARY_TYPE {
-		public String toString() {
-	    		return "imaginary";
-		}
-	},
-	RUNE_TYPE {
-		public String toString() {
-	    		return "rune";
-		}
-	},
 	ARRAY_TYPE {
 		public String toString() {
 	    		return "array";

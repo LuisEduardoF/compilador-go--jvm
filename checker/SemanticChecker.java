@@ -118,10 +118,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			this.lastDeclType = Type.STRING_TYPE;
 		}else if(tipo.equals("float64") || tipo.equals("float32")){
 			this.lastDeclType = Type.FLOAT_TYPE;
-		}else if(tipo.equals("complex64") || tipo.equals("complex128")){
-			this.lastDeclType = Type.IMAGINARY_TYPE;
-		}else if(tipo.equals("int32")){
-			this.lastDeclType = Type.RUNE_TYPE;
 		}
     }
 
@@ -143,16 +139,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	@Override
 	public AST visitFloatType(GoParser.FloatTypeContext ctx){
 		this.lastDeclType = Type.FLOAT_TYPE;
-    	return null; // Java says must return something even when Void	
-	}
-	@Override
-	public AST visitImaginaryType(GoParser.ImaginaryTypeContext ctx){
-		this.lastDeclType = Type.IMAGINARY_TYPE;
-    	return null; // Java says must return something even when Void	
-	}
-	@Override
-	public AST visitRuneType(GoParser.RuneTypeContext ctx){
-		this.lastDeclType = Type.RUNE_TYPE;
     	return null; // Java says must return something even when Void	
 	}
 	@Override
@@ -346,29 +332,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		else return false;
 	}
 	
-	private Type defineTipoDadosOperacao(GoParser.ExpressionContext ctx) {
-		// Vamos considerar que o tipo da operacao sera o tipo do operando mais a direita
-		
-		// Pegando expression(1) vamos para o operando da direita
-		GoParser.OperandContext operandContext = ctx.expression(1).primaryExpr().operand();
-		try {
-			// Se depois de operandContext conseguirmos ir para operandName, temos uma variavel
-			String operandoMaisADireita = operandContext.operandName().getChild(0).getText();
-			
-			int idx = vt.lookupVar(operandoMaisADireita);
-			
-			if(idx == -1) return null; // Variavel mais a direita nao se encontra em vt (nao declarada)
-			else return this.vt.getType(idx); // Variavel encontrada na vt, retorna o tipo dela
-		}catch(Exception e) {
-			// Se depois de operandContext conseguirmos ir para literal, temos uma constante
-			String constante = operandContext.getStop().getText();
-			
-			// [Marretagem pra saber se a constante eh float ou int]
-			if(constante.contains(".")) return Type.FLOAT_TYPE;
-			else return Type.INT_TYPE;
-		}
-	}
-	
 	private ast.NodeKind defineTipoOperacao(String operacao) {
 		if(operacao.equals("+")) {
 			return ast.NodeKind.PLUS_NODE;
@@ -409,7 +372,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			// Expressao composta
 			String operacao = ctx.getChild(1).getText();
 
-			
 			visit(ctx.expression(0));
 
 			Type tipoDadosOperacao = this.lastDeclType;
@@ -430,6 +392,9 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				if(right.kind != ast.NodeKind.VAR_USE_NODE && right.kind != ast.NodeKind.VAR_DECL_NODE)
 					right.type = Type.FLOAT_TYPE;
 
+			}
+			if(left.type == Type.FLOAT_TYPE && right.type == Type.FLOAT_TYPE) {
+				valor.type = Type.FLOAT_TYPE;
 			}
 			
 			if(left.type != right.type) {
@@ -515,11 +480,12 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			AST ramo = this.makeTreeAssignment(expressao, assignTree);
 			
 			visit(expressao);
-
+			
+			//confere se a variavel ta recebendo o mesmo tipo
 			if(i == 0) primeiroTipo = this.lastDeclType;
 
 			if(primeiroTipo != ramo.type && i == 1){
-				int line = 11; 
+				int line = expressao.getStop().getLine();
 				typeError(line,ramo.kind.toString(),primeiroTipo,ramo.type);
 				return null;
 			}
@@ -567,6 +533,16 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 		return fazPai(ifTree);
 
+	}
+	
+	@Override
+	public AST visitForStmt(GoParser.ForStmtContext ctx) {
+		AST forTree = AST.newSubtree(ast.NodeKind.REPEAT_NODE, Type.NO_TYPE);
+		
+		forTree.addChild(visit(ctx.block()));
+		forTree.addChild(makeTreeAssignment(ctx.expression(), forTree));
+		
+		return fazPai(forTree);
 	}
 
 	@Override
