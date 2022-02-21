@@ -166,6 +166,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     	return null; // Java says must return something even when Void
 	}
 
+
 	private boolean testExpressionList(GoParser.VarDeclContext ctx, int i) {
 		try {
 			visit(ctx.varSpec(i).expressionList());
@@ -208,6 +209,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		
 		for(int i = 0;i<qtdVar;i++){
 			if(this.testExpressionList(ctx, i) == true) {
+				//caso var NomeVar Tipo = valor
 				try{
 					String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
 					
@@ -224,8 +226,8 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 						AST valor = makeTreeAssignment(ctx.varSpec(i).expressionList().expression(j),assing);
 						assing.addChild(valor);
 
-						System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
-						if(assing.getChild(0).type != assing.getChild(1).type){
+						//System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
+						if(assing.getChild(0).type != assing.getChild(1).type && (assing.getChild(0).type != Type.FLOAT_TYPE && assing.getChild(1).type == Type.INT_TYPE)){
 							int line = ctx.getStop().getLine(); //qual a linha?
 							typeError(line,valor.kind.toString(),assing.getChild(0).type,assing.getChild(1).type);
 							return null;
@@ -235,23 +237,25 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 						
 						father.addChild(assing);
 					}
+
+				//caso var NomeVar = valor
 				}catch(Exception e){
 
 					int tam = ctx.varSpec(i).expressionList().expression().size();
-					String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
+					
 					// setLastDeclType(tipo);
 					for(int k = 0;k < tam;k++){
 						AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
-						setLastDeclType(tipo);
-						//visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
+						
+						visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
 						
 						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol()));
 
 						AST valor = makeTreeAssignment(ctx.varSpec(i).expressionList().expression(k),assing);
 						assing.addChild(valor);
 
-						System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
-						if(assing.getChild(0).type != assing.getChild(1).type){
+						//System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
+						if(assing.getChild(0).type != assing.getChild(1).type && (assing.getChild(0).type != Type.FLOAT_TYPE && assing.getChild(1).type == Type.INT_TYPE)){
 							int line = ctx.getStop().getLine(); //qual a linha?
 							typeError(line,valor.kind.toString(),assing.getChild(0).type,assing.getChild(1).type);
 							return null;
@@ -264,7 +268,9 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				}
 
 			}else {
+				//declaraçao sem valores
 				try{
+					
 					String tipo = ctx.varSpec(i).type_().typeName().IDENTIFIER().getSymbol().getText();
 					
 					int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
@@ -272,10 +278,13 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 					for(int j = 0;j < tam;j++){
 						setLastDeclType(tipo);
-						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol());
+						
+						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol());	
+						
 					}
 				}
-					
+				
+				//declaracao array
 				catch(Exception e){
 					int tam = ctx.varSpec(i).expressionList().expression().size();
 					for(int k = 0;k < tam;k++){
@@ -329,8 +338,10 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 
 	
-	private boolean testaConstante(GoParser.ExpressionContext ctx) {
-		GoParser.LiteralContext literal = ctx.primaryExpr().operand().literal();
+	private boolean testaConstante(GoParser.ExpressionContext ctx,String s) {
+		GoParser.LiteralContext literal;
+		if(s.equals("")) literal = ctx.primaryExpr().operand().literal();
+		else literal = ctx.unaryExpr().expression().primaryExpr().operand().literal();
 		if(literal != null) return true;
 		else return false;
 	}
@@ -367,9 +378,29 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			return ast.NodeKind.TIMES_NODE;
 		}else if(operacao.equals("/")) {
 			return ast.NodeKind.OVER_NODE;
+		}else if(operacao.equals("==")){
+			return ast.NodeKind.EQ_NODE;
+		}else if(operacao.equals("<")){
+			return ast.NodeKind.LT_NODE;
+		}else if(operacao.equals(">")){
+			return ast.NodeKind.RT_NODE;
+		}else if(operacao.equals(">=")){
+			return ast.NodeKind.ERT_NODE;
+		}else if(operacao.equals("<=")){
+			return ast.NodeKind.ELT_NODE;
 		}
 		
 		return null;
+	}
+
+	private String verificaUnaryExpression(GoParser.ExpressionContext ctx){
+		try{
+			String sinal = ctx.unaryExpr().getChild(0).getText();
+			return sinal;
+		}
+		catch(Exception e){
+			return "";
+		}
 	}
 	
 	private AST makeTreeAssignment(GoParser.ExpressionContext ctx, AST ramo) {
@@ -387,10 +418,9 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			
 			AST left = this.makeTreeAssignment(ctx.expression(0), valor);
 
-			
 			AST right = this.makeTreeAssignment(ctx.expression(1), valor);
 
-			System.out.println(left.kind+" "+right.kind);
+			
 
 			if((left.type == Type.FLOAT_TYPE || right.type == Type.FLOAT_TYPE) && (right.type == Type.INT_TYPE || left.type == Type.INT_TYPE)){
 				valor.type = Type.FLOAT_TYPE;
@@ -401,7 +431,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 					right.type = Type.FLOAT_TYPE;
 
 			}
-			System.out.println(left.type+" "+right.type);
+			
 			if(left.type != right.type) {
 				int line = ctx.getStop().getLine(); //qual a linha?
 				typeError(line,operacao,left.type,right.type);
@@ -413,12 +443,18 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 			return valor;
 		}else {
-			int numFilhos2 = ctx.primaryExpr().operand().getChildCount();
+			String sinal = verificaUnaryExpression(ctx);
+			
+			int numFilhos2;
 
+			if(sinal.equals("")) numFilhos2 = ctx.primaryExpr().operand().getChildCount();
+			else numFilhos2 = ctx.unaryExpr().expression().primaryExpr().operand().getChildCount();
+
+			
 			if(numFilhos2 == 1) {
 				// Expressao simples
 				
-				if(!this.testaConstante(ctx)) {
+				if(!this.testaConstante(ctx,sinal)) {
 					
 					// O operando eh uma variavel					
 					Token token = ctx.getStop();
@@ -429,15 +465,27 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 					return new AST(ast.NodeKind.VAR_USE_NODE, idx, this.vt.getType(idx));
 				}else {
 					// O operando eh uma constante
-					visit(ctx.primaryExpr());	
-					String constante = ctx.getStop().getText();
+					
+					String constante; //constante é um tipo
+					//nao possui sinal + ou -
+					if(sinal.equals("")){
+						visit(ctx.primaryExpr());
+						constante = ctx.getStop().getText();
+					}
+					//possui sinal + ou -
+					else{
+						visit(ctx.unaryExpr().expression());
+						constante = sinal + ctx.unaryExpr().expression().getStop().getText();
+					}
+					
 					if(constante.contains(".")){
 						this.lastDeclType = Type.FLOAT_TYPE;
 					}
 					return this.retornaFilhoValor(constante);
 				}	
 			}else {
-				return this.makeTreeAssignment(ctx.primaryExpr().operand().expression(), ramo);
+				if(sinal.equals("")) return this.makeTreeAssignment(ctx.primaryExpr().operand().expression(), ramo);
+				else return this.makeTreeAssignment(ctx.unaryExpr().expression(), ramo);
 			}
 		}
 	}
@@ -476,7 +524,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				return null;
 			}
 
-			System.out.println(this.lastDeclType);
+			//System.out.println(this.lastDeclType);
 			
 
 			if(ramo != null) assignTree.addChild(ramo);
@@ -488,6 +536,39 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		return fazPai(assignTree);
 	}
 	
+	@Override
+	public AST visitIfStmt(GoParser.IfStmtContext ctx){
+
+		AST ifTree = AST.newSubtree(ast.NodeKind.IF_NODE,Type.NO_TYPE);
+
+		ifTree.addChild(visit(ctx.block(0)));
+
+		//tenta se tiver else
+		try{
+			ifTree.addChild(visit(ctx.block(1)));
+		}
+		catch(Exception e){
+			//e.printStackTrace();
+		}
+		
+
+		ifTree.addChild(makeTreeAssignment(ctx.expression(),ifTree));
+
+		try{
+			AST marretagem = visit(ctx.ifStmt());
+			AST marretagem2 = marretagem.getChild(0);
+			ifTree.addChild(marretagem2);
+		}
+		catch(Exception e){
+			//e.printStackTrace();
+		}		
+
+		//AST.printDot(ifTree,vt);	
+
+		return fazPai(ifTree);
+
+	}
+
 	@Override
 	public AST visitBlock(GoParser.BlockContext ctx){
 		AST blockTree = (AST.newSubtree(ast.NodeKind.BLOCK_NODE,Type.NO_TYPE));

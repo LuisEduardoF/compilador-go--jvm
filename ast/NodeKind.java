@@ -14,7 +14,7 @@ public enum NodeKind {
 	},
     EQ_NODE {
 		public String toString() {
-            return "=";
+            return "==";
         }
 	},
     BLOCK_NODE {
@@ -40,6 +40,21 @@ public enum NodeKind {
     LT_NODE {
 		public String toString() {
             return "<";
+        }
+	},
+	RT_NODE {
+		public String toString() {
+            return ">";
+        }
+	},
+	ELT_NODE {
+		public String toString() {
+            return "<=";
+        }
+	},
+	ERT_NODE {
+		public String toString() {
+            return ">=";
         }
 	},
     MINUS_NODE {
