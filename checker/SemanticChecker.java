@@ -134,6 +134,9 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	@Override
 	public AST visitStringType(GoParser.StringTypeContext ctx){
 		this.lastDeclType = Type.STRING_TYPE;
+
+		this.st.add(ctx.string_().getStop().getText());
+
     	return null; // Java says must return something even when Void	
 	}
 	@Override
