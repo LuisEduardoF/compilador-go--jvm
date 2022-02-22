@@ -368,7 +368,23 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			return "";
 		}
 	}
-	
+	private AST makeTreeFuncAssignment(GoParser.PrimaryExprContext ctx){
+		// Criar a AST
+		AST func_decl = (AST.newSubtree(ast.NodeKind.VAR_USE_NODE, Type.NO_TYPE));
+		String func_name = ctx.primaryExpr().getStop().getText();
+		// Pegar os argumentos da função
+		GoParser.ExpressionListContext args_ctx = ctx.arguments().expressionList();
+		Integer numOfExpression = args_ctx.expression().size();
+		// AST(ast.NodeKind.VAR_USE_NODE, func_name, Type.INT_TYPE);
+		for (int i = 0; i < numOfExpression; i++){
+			AST argument = makeTreeAssignment(args_ctx.expression(i), func_decl);
+
+			if(argument != null) func_decl.addChild(argument);
+			else return null;
+		}
+		AST.printDot(func_decl, vt);
+		return func_decl;
+	}
 	private AST makeTreeAssignment(GoParser.ExpressionContext ctx, AST ramo) {
 		int numFilhos = ctx.getChildCount();
 		if(numFilhos == 3) {
@@ -415,8 +431,22 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			
 			int numFilhos2;
 
-			if(sinal.equals("")) numFilhos2 = ctx.primaryExpr().operand().getChildCount();
-			else numFilhos2 = ctx.unaryExpr().expression().primaryExpr().operand().getChildCount();
+			if(sinal.equals("")){
+				// Se sinal for "", ou é um número sem sinal ou é uma função
+				try{
+					// Se rodar é um número sem sinal ( SAFE )
+					System.out.println("Hello");
+					numFilhos2 = ctx.primaryExpr().operand().getChildCount();
+				}
+				catch(Exception e){
+					// Se não rodar é uma função ( F )
+					// Pegar o nome da função
+					return makeTreeFuncAssignment(ctx.primaryExpr());
+				}
+			}
+			else{
+				numFilhos2 = ctx.unaryExpr().expression().primaryExpr().operand().getChildCount();
+			}
 
 			
 			if(numFilhos2 == 1) {

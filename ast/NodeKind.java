@@ -72,6 +72,11 @@ public enum NodeKind {
             return "+";
         }
 	},
+    FUNC_NODE {
+		public String toString() {
+            return "";
+        }
+	},
     PROGRAM_NODE {
 		public String toString() {
             return "program";
