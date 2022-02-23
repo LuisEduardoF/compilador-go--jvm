@@ -1,15 +1,15 @@
 package main
 
-import "fmt"
+var a, b int = 1, 2
 
-var a,b int = 1, 2;
+func main2(a int, b float64) (int, int) {
+	return 1, 2
+}
 
-func main2(a int, b int){
-	
+func main3(a int) (int) {
+	return 2
 }
 
 func main() {
-	var a int = 1
-	var b float64 = 2.3
-	main2(3, 4)
+	a,b = 3, 4
 }
