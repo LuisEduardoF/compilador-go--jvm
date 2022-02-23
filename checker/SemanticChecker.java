@@ -69,6 +69,8 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
             return;
         }
     }
+
+    int tamArray = 0;
     
     // Cria uma nova variável a partir do dado token.
     AST newVar(Token token) {
@@ -92,7 +94,8 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
         	passed = false;
             return null;
         }
-        vt.addVar(text, line, lastDeclType);
+        vt.addVar(text, line, lastDeclType,tamArray);
+        tamArray = 0;
         idx = vt.lookupVar(text);
         
         return new AST(ast.NodeKind.VAR_DECL_NODE, idx,vt.getEscopo(), lastDeclType);
@@ -368,9 +371,10 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				
 				//declaracao array
 				catch(Exception e){
-					int tam = ctx.varSpec(i).expressionList().expression().size();
+					int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
 					for(int k = 0;k < tam;k++){
-						visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
+						visit(ctx.varSpec(i).type_());
+						tamArray = Integer.parseInt(ctx.varSpec(i).type_().typeLit().arrayType().arrayLength().getStop().getText());
 						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
 					}
 				}
@@ -687,11 +691,13 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		boolean ok = true;
 		while( cont < 2*ctx.expressionList(0).expression().size()) {
 			if(i == 2 && funcao == false) break;
-			System.out.println("i> "+i +" j> "+j);
-			System.out.println("kkk");
+			
 			GoParser.ExpressionContext expressao = ctx.expressionList(i).expression(j);
 
 			String vari = expressao.getStop().getText();
+			if(vari.equals("]")){
+				vari = ctx.expressionList(0).expression(0).primaryExpr().primaryExpr().getStop().getText();
+			}
 			
 			if(this.vt.lookupVar(vari) == -1 && i == 0 && this.global.lookupVar(vari) == -1){
 				String varName = vari;

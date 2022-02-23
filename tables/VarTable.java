@@ -14,6 +14,7 @@ public final class VarTable {
 	private List<Entry> table = new ArrayList<Entry>();
 	private int escopo;
 
+
 	public int lookupVar(String s) {
 		for (int i = 0; i < table.size(); i++) {
 			if (table.get(i).name.equals(s)) {
@@ -23,8 +24,8 @@ public final class VarTable {
 		return -1;
 	}
 	
-	public int addVar(String s, int line, Type type) {
-		Entry entry = new Entry(s, line, type);
+	public int addVar(String s, int line, Type type, int tamArray) {
+		Entry entry = new Entry(s, line, type,tamArray);
 		int idxAdded = table.size();
 		table.add(entry);
 		return idxAdded;
@@ -62,14 +63,18 @@ public final class VarTable {
 	public Type getType(int i) {
 		return table.get(i).type;
 	}
+
+	public int getTamArray(int i) {
+		return table.get(i).tamArray;
+	}
 	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		Formatter f = new Formatter(sb);
 		f.format("Variables table:\n");
 		for (int i = 0; i < table.size(); i++) {
-			f.format("[vt] Entry %d -- name: %s, line: %d, type: %s\n", i,
-	                 getName(i), getLine(i), getType(i).toString());
+			f.format("[vt] Entry %d -- name: %s, line: %d, type: %s, tamArray: %d\n", i,
+	                 getName(i), getLine(i), getType(i).toString(),getTamArray(i));
 		}
 		f.close();
 		return sb.toString();
@@ -79,11 +84,18 @@ public final class VarTable {
 		String name;
 		int line;
 		Type type;
+		int tamArray;
 		
-		Entry(String name, int line, Type type) {
+		Entry(String name, int line, Type type, int tamArray) {
 			this.name = name;
 			this.line = line;
 			this.type = type;
+			if(type == Type.ARRAY_TYPE){
+				this.tamArray = tamArray;
+			}
+			else{
+				this.tamArray = 0;
+			}
 		}
 	}
 }
