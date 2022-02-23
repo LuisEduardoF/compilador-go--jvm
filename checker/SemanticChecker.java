@@ -1,11 +1,15 @@
 package checker;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import parser.GoParser;
 import parser.GoParserBaseVisitor;
 import parser.GoParser.ExpressionContext;
+import tables.FuncTable;
 import tables.StrTable;
 import tables.VarTable;
 import typing.Type;
@@ -36,10 +40,14 @@ import ast.AST;
  * muito comum de erros. Veja o método visitAssign_stmt abaixo para
  * ter um exemplo.
  */
+
 public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 	private StrTable st = new StrTable();   // Tabela de strings.
-    private VarTable vt = new VarTable();   // Tabela de variáveis.
+	private VarTable global = new VarTable(); //Tabela de variaveis globais
+	private FuncTable ft = new FuncTable(); // Tabela de funcoes
+	
+    private VarTable vt;   // Ponteiro para uma tabela de variaveis;
     
     Type lastDeclType;  // Variável "global" com o último tipo declarado.
     
@@ -75,7 +83,35 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
         }
         vt.addVar(text, line, lastDeclType);
         idx = vt.lookupVar(text);
-        return new AST(ast.NodeKind.VAR_DECL_NODE, idx, lastDeclType);
+        
+        return new AST(ast.NodeKind.VAR_DECL_NODE, idx,vt.getEscopo(), lastDeclType);
+    }
+    
+    //token recebido é function decl
+    void newFunc(GoParser.FunctionDeclContext ctx) {
+    	String text = ctx.getChild(1).getText();
+    	int line = ctx.IDENTIFIER().getSymbol().getLine();
+   		int idx = ft.lookupFunc(text);
+        if (idx != -1) {
+        	System.err.printf(
+    			"SEMANTIC ERROR (%d): function '%s' already declared at line %d.\n",
+                line, text, ft.getLine(idx));
+        	passed = false;
+           
+        }
+        // Cria a lista de param
+        List<Type> param = new ArrayList<Type>();
+        
+        List<GoParser.ParameterDeclContext> parameterDeclContext = ctx.signature().parameters().parameterDecl(); 
+        int tam = parameterDeclContext.size();
+        
+        for(int i = 0; i < tam; i++) {
+        	String tipo = parameterDeclContext.get(i).type_().typeName().IDENTIFIER().getSymbol().getText();
+        	setLastDeclType(tipo);
+        	param.add(this.lastDeclType);
+        }
+        
+        ft.addFunc(text, line, param, param, new VarTable());
     }
     
     // Retorna true se os testes passaram.
@@ -88,12 +124,14 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
         System.out.print("\n\n");
         System.out.print(st);
         System.out.print("\n\n");
-    	System.out.print(vt);
+    	System.out.print(global);
+    	System.out.print("\n\n");
+    	System.out.print(ft);
     	System.out.print("\n\n");
     }
     
     void printAST() {
-    	AST.printDot(root, vt);
+    	AST.printDot(root, global, ft);
     }
   	
     @Override
@@ -101,11 +139,31 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     	
     	this.root = AST.newSubtree(ast.NodeKind.PROGRAM_NODE, Type.NO_TYPE);
     	
-    	int tam = ctx.functionDecl().size();
-    	for(int i = 0;i < tam;i++){
-    		this.root.addChild(visit(ctx.functionDecl(i)));
+    	//variaveis globais
+    	try {
+	    	int tam = ctx.declaration().size();
+	    	vt = global;
+	    	vt.setEscopo(0);
+	    	for(int i = 0;i < tam;i++){
+	    		//this.root.addChild();
+	    		for(AST child: visit(ctx.declaration(i)).getChildren()) this.root.addChild(child);
+	    		
+	    	}
     	}
-    	
+    	catch(Exception decl) {
+    		// Se não tiver variavel global
+    	}
+
+    	int tam = ctx.functionDecl().size();
+	    for(int i = 0;i < tam;i++) {
+	    	AST func = new AST(ast.NodeKind.FUNC_NODE, i, Type.NO_TYPE);
+	    	this.newFunc(ctx.functionDecl(i));
+	    	vt = ft.getVarTable(i);
+	    	vt.setEscopo(i+1);
+	    	func.addChild(visit(ctx.functionDecl(i)));
+	    	this.root.addChild(func);
+	    }
+
     	return this.root;
     }
     
@@ -155,7 +213,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     	return null; // Java says must return something even when Void
 	}
 
-
 	private boolean testExpressionList(GoParser.VarDeclContext ctx, int i) {
 		try {
 			visit(ctx.varSpec(i).expressionList());
@@ -195,6 +252,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		int qtdVar = ctx.varSpec().size();
 		
 		AST father = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
+		AST aux;
 		
 		for(int i = 0;i<qtdVar;i++){
 			if(this.testExpressionList(ctx, i) == true) {
@@ -208,10 +266,11 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 						AST assing = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
 						setLastDeclType(tipo);
 						
-
-						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol()));
+						aux = newVar(ctx.varSpec(i).identifierList().IDENTIFIER(j).getSymbol());
+						if(aux == null) return null;
+						assing.addChild(aux);
 						
-
+						
 						AST valor = makeTreeAssignment(ctx.varSpec(i).expressionList().expression(j),assing);
 						assing.addChild(valor);
 
@@ -238,7 +297,9 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 						
 						visit(ctx.varSpec(i).expressionList().expression(k).primaryExpr().operand().literal().basicLit());
 						
-						assing.addChild(newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol()));
+						aux = newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
+						if(aux == null) return null;
+						assing.addChild(aux);
 
 						AST valor = makeTreeAssignment(ctx.varSpec(i).expressionList().expression(k),assing);
 						assing.addChild(valor);
@@ -292,6 +353,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 	public AST visitShortVarDecl(GoParser.ShortVarDeclContext ctx){
 		int tam = ctx.expressionList().expression().size();
 		AST father = AST.newSubtree(ast.NodeKind.ASSIGN_NODE,Type.NO_TYPE);
+		AST aux;
 		
 		for(int i = 0;i < tam;i++){
 			//setar o tipo
@@ -301,11 +363,10 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			//AST valor = retornaFilhoValor(ctx.expressionList().expression(i).getStop().getText());
 
 			AST valor = makeTreeAssignment(ctx.expressionList().expression(i),father);
-
-			assing.addChild(newVar(ctx.identifierList().IDENTIFIER(i).getSymbol()));
-
 			
-
+			aux = newVar(ctx.identifierList().IDENTIFIER(i).getSymbol());
+			if(aux == null) return null;
+			assing.addChild(aux);
 			assing.addChild(valor);
 			
 			
@@ -324,9 +385,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		System.out.printf("[varNotDeclError] SEMANTIC ERROR (%d): variable %s not declared\n",line,varName);
 		passed = false;
 	}
-
-
-	
 	private boolean testaConstante(GoParser.ExpressionContext ctx,String s) {
 		GoParser.LiteralContext literal;
 		if(s.equals("")) literal = ctx.primaryExpr().operand().literal();
@@ -334,7 +392,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		if(literal != null) return true;
 		else return false;
 	}
-	
 	private ast.NodeKind defineTipoOperacao(String operacao) {
 		if(operacao.equals("+")) {
 			return ast.NodeKind.PLUS_NODE;
@@ -358,7 +415,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		
 		return null;
 	}
-
 	private String verificaUnaryExpression(GoParser.ExpressionContext ctx){
 		try{
 			String sinal = ctx.unaryExpr().getChild(0).getText();
@@ -368,21 +424,80 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			return "";
 		}
 	}
+	private void funcNotDeclError(int line, String funcName){
+		System.out.printf("[funcNotDeclError] SEMANTIC ERROR (%d): func %s not declared\n",line,funcName);
+		passed = false;
+	}
+	private void funcNumArgsError(int line, String funcName) {
+		System.out.printf("[funcNumArgsError] SEMANTIC ERROR (%d): func %s arguments mismatch\n",line,funcName);
+		passed = false;
+	}
+	private void funcTypeArgsError(int line, String funcName,Type one, Type two) {
+		System.out.printf("[funcTypeArgsError] SEMANTIC ERROR (%d): func %s arguments mismatch type %s and %s\n",line,funcName,one.toString(),two.toString());
+		passed = false;
+	}
+	
+	@Override
+	public AST visitPrimaryExpr(GoParser.PrimaryExprContext ctx) {
+		
+		try {
+			AST teste = makeTreeFuncAssignment(ctx);
+			return fazPai(teste);
+		}catch(Exception e) {
+			return visitChildren(ctx);
+		}
+		
+	}
+	
 	private AST makeTreeFuncAssignment(GoParser.PrimaryExprContext ctx){
 		// Criar a AST
-		AST func_decl = (AST.newSubtree(ast.NodeKind.VAR_USE_NODE, Type.NO_TYPE));
 		String func_name = ctx.primaryExpr().getStop().getText();
+		int idx = ft.lookupFunc(func_name);
+		if(idx == -1) {
+			this.funcNotDeclError(ctx.primaryExpr().getStop().getLine(), func_name);
+			return null;
+		}
+		AST func_decl = new AST(ast.NodeKind.FUNC_NODE, idx, Type.NO_TYPE);
+		
+		
+		
 		// Pegar os argumentos da função
-		GoParser.ExpressionListContext args_ctx = ctx.arguments().expressionList();
-		Integer numOfExpression = args_ctx.expression().size();
+		int childs = ctx.arguments().getChildCount();
+		Integer numOfExpression = 0;
+		GoParser.ExpressionListContext args_ctx = null;
+		if(childs != 2){
+			args_ctx = ctx.arguments().expressionList();
+			numOfExpression = args_ctx.expression().size();
+		}
+		
 		// AST(ast.NodeKind.VAR_USE_NODE, func_name, Type.INT_TYPE);
+		List<Type> argumentos = new ArrayList<Type>();
 		for (int i = 0; i < numOfExpression; i++){
 			AST argument = makeTreeAssignment(args_ctx.expression(i), func_decl);
-
+			
+			argumentos.add(argument.getType());
+			
 			if(argument != null) func_decl.addChild(argument);
 			else return null;
 		}
-		AST.printDot(func_decl, vt);
+		
+		List<Type> entradas = ft.getTypes(idx);
+		
+		//tratamento de argumentos
+		if(entradas.size() != argumentos.size()) {
+			this.funcNumArgsError(ctx.primaryExpr().getStop().getLine(), func_name);
+			return null;
+		}
+		
+		for(int i = 0 ; i < entradas.size();i++) {
+			if(entradas.get(i) != argumentos.get(i)) {
+				this.funcTypeArgsError(ctx.primaryExpr().getStop().getLine(), func_name, entradas.get(i), argumentos.get(i));
+				return null;
+			}
+		}
+		
+		//tratamento de retorno
+		
 		return func_decl;
 	}
 	private AST makeTreeAssignment(GoParser.ExpressionContext ctx, AST ramo) {
@@ -435,7 +550,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				// Se sinal for "", ou é um número sem sinal ou é uma função
 				try{
 					// Se rodar é um número sem sinal ( SAFE )
-					System.out.println("Hello");
 					numFilhos2 = ctx.primaryExpr().operand().getChildCount();
 				}
 				catch(Exception e){
@@ -457,10 +571,10 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 					// O operando eh uma variavel					
 					Token token = ctx.getStop();
 					this.checkVar(token);
-										
+		
 					int idx = vt.lookupVar(token.getText());
-										
-					return new AST(ast.NodeKind.VAR_USE_NODE, idx, this.vt.getType(idx));
+						
+					return new AST(ast.NodeKind.VAR_USE_NODE, idx, vt.getEscopo(),this.vt.getType(idx));
 				}else {
 					// O operando eh uma constante
 					

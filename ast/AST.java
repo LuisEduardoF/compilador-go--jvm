@@ -5,6 +5,7 @@ import static typing.Type.NO_TYPE;
 import java.util.ArrayList;
 import java.util.List;
 
+import tables.FuncTable;
 import tables.VarTable;
 import typing.Type;
 
@@ -20,39 +21,46 @@ public class AST {
 	public  final float floatData;
 	public  final String stringData;
 	public  final boolean boolData;
+	public 	final int escopo; //se for NodeKind VAR tem que ter escopo
 	public   Type type;
 	private final List<AST> children; // Privado para que a manipulação da lista seja controlável.
 
 	// Construtor completo para poder tornar todos os campos finais.
 	// Privado porque não queremos os dois campos 'data' preenchidos ao mesmo tempo.
-	private AST(NodeKind kind, int intData, float floatData, String stringData, boolean boolData, Type type) {
+	private AST(NodeKind kind, int intData, float floatData, String stringData, boolean boolData, int escopo, Type type) {
 		this.kind = kind;
 		this.intData = intData;
 		this.floatData = floatData;
 		this.stringData = stringData;
 		this.boolData = boolData;
+		this.escopo = escopo;
 		this.type = type; 
 		this.children = new ArrayList<AST>();
 	}
 
 	// Cria o nó com um dado inteiro.
 	public AST(NodeKind kind, int intData, Type type) {
-		this(kind, intData, 0.0f, "", false, type);
+		this(kind, intData, 0.0f, "", false, 0, type);
 	}
 
 	// Cria o nó com um dado float.
 	public AST(NodeKind kind, float floatData, Type type) {
-		this(kind, 0, floatData, "", false, type);
+		this(kind, 0, floatData, "", false,0, type);
 	}
 	
 	// Cria o nó com um dado String.
 	public AST(NodeKind kind, String stringData, Type type) {
-		this(kind, 0, 0.0f, stringData.replaceAll("\"", ""), false, type);
+		this(kind, 0, 0.0f, stringData.replaceAll("\"", ""), false,0,type);
 	}
 	
 	// Cria o nó com um dado boolean.
 	public AST(NodeKind kind, boolean booleanData, Type type) {
-		this(kind, 0, 0.0f, "", booleanData, type);
+		this(kind, 0, 0.0f, "", booleanData,0,type);
+	}
+	
+	// Cria o nó com um dado variavel.
+	public AST(NodeKind kind, int intData, int escopo, Type type) {
+		this(kind, intData, 0.0f, "",false, escopo, type);
 	}
 
 	// Adiciona um novo filho ao nó.
@@ -90,6 +98,7 @@ public class AST {
 	// Estáticas porque só precisamos de uma instância.
 	private static int nr;
 	private static VarTable vt;
+	private static FuncTable ft;
 
 	// Imprime recursivamente a codificação em DOT da subárvore começando no nó atual.
 	// Usa stderr como saída para facilitar o redirecionamento, mas isso é só um hack.
@@ -101,8 +110,16 @@ public class AST {
 	    	System.err.printf("(%s) ", this.type.toString());
 	    }
 	    if (this.kind == NodeKind.VAR_DECL_NODE || this.kind == NodeKind.VAR_USE_NODE) {
-	    	System.err.printf("%s@", vt.getName(this.intData));
-	    } else {
+	    	if(this.escopo == 0) {
+	    		System.err.printf("%s@", vt.getName(this.intData));
+	    	}
+	    	else {
+	    		System.err.printf("%s@", ft.getVarTable(this.escopo-1).getName(this.intData));
+	    	}
+	    	
+	    }else if(this.kind == NodeKind.FUNC_NODE){
+	    	System.err.printf("%s@", ft.getName(this.intData));
+	    }else {
 	    	System.err.printf("%s", this.kind.toString());
 	    }
 	    if (NodeKind.hasData(this.kind)) {
@@ -129,11 +146,23 @@ public class AST {
 	}
 
 	// Imprime a árvore toda em stderr.
-	public static void printDot(AST tree, VarTable table) {
+	public static void printDot(AST tree, VarTable table, FuncTable func) {
 	    nr = 0;
 	    vt = table;
+	    ft = func;
+	    
+	    int tam = ft.getTable().size();
+	    for(int i = 0; i< tam; i++) {
+	    	VarTable aux = ft.getVarTable(i);
+	    	int tamAux = aux.getSize();
+		    for(int j = 0; j < tamAux; j++) {
+		    	vt.addEntry(aux.getEntry(j));
+		    }  
+	    }
+
 	    System.err.printf("digraph {\ngraph [ordering=\"out\"];\n");
 	    tree.printNodeDot();
+	    
 	    System.err.printf("}\n");
 	}
 }
