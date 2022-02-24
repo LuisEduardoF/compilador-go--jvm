@@ -373,7 +373,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				catch(Exception e){
 					int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
 					for(int k = 0;k < tam;k++){
-						visit(ctx.varSpec(i).type_());
+						visit(ctx.varSpec(i).type_().typeLit().arrayType().elementType());
 						tamArray = Integer.parseInt(ctx.varSpec(i).type_().typeLit().arrayType().arrayLength().getStop().getText());
 						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
 					}
@@ -546,6 +546,31 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		return func_decl;
 	}
 	
+	private AST makeTreeArrayAssignment(GoParser.PrimaryExprContext ctx) {
+		
+			String arr_name = ctx.primaryExpr().getStop().getText();
+			
+			int idx = vt.lookupVar(arr_name);
+			int idx2 = global.lookupVar(arr_name);
+			if(idx == -1 && idx2 == -2) {
+				this.varNotDeclError(ctx.primaryExpr().getStop().getLine(), arr_name);
+				return null;
+			}
+			VarTable aux;
+			if(idx == -1) {
+				aux = global;
+				idx = idx2;
+
+			}else {
+				aux = vt;
+			}
+		
+			
+			AST arr_use = new AST(ast.NodeKind.ARRAY_NODE, idx, aux.getEscopo(), aux.getType(idx));
+			
+			return arr_use;
+	}
+	
 	private AST makeTreeAssignment(GoParser.ExpressionContext ctx, AST ramo) {
 		int numFilhos = ctx.getChildCount();
 		if(numFilhos == 3) {
@@ -601,7 +626,15 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				catch(Exception e){
 					// Se não rodar é uma função ( F )
 					// Pegar o nome da função
-					return makeTreeFuncAssignment(ctx.primaryExpr());
+					try {
+						// Funcao
+						GoParser.ArgumentsContext argumentsContext = ctx.primaryExpr().arguments();
+						return makeTreeFuncAssignment(ctx.primaryExpr());
+					}catch(Exception e2) {
+						// Array
+						GoParser.IndexContext indexContext = ctx.primaryExpr().index();
+						return makeTreeArrayAssignment(ctx.primaryExpr());
+					}
 				}
 			}
 			else{
@@ -695,9 +728,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			GoParser.ExpressionContext expressao = ctx.expressionList(i).expression(j);
 
 			String vari = expressao.getStop().getText();
-			if(vari.equals("]")){
-				vari = ctx.expressionList(0).expression(0).primaryExpr().primaryExpr().getStop().getText();
-			}
+			
 			
 			if(this.vt.lookupVar(vari) == -1 && i == 0 && this.global.lookupVar(vari) == -1){
 				String varName = vari;

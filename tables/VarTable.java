@@ -90,12 +90,8 @@ public final class VarTable {
 			this.name = name;
 			this.line = line;
 			this.type = type;
-			if(type == Type.ARRAY_TYPE){
-				this.tamArray = tamArray;
-			}
-			else{
-				this.tamArray = 0;
-			}
+			this.tamArray = tamArray;
+			
 		}
 	}
 }

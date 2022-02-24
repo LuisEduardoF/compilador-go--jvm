@@ -126,6 +126,11 @@ public enum NodeKind {
 		public String toString() {
             return "write";
         }
+	},
+    ARRAY_NODE {
+		public String toString() {
+            return "arr_";
+        }
 	};
 	
 	public static boolean hasData(NodeKind kind) {
@@ -137,6 +142,7 @@ public enum NodeKind {
 	        case VAR_DECL_NODE:
 	        case VAR_USE_NODE:
 	        case FUNC_NODE:
+	        case ARRAY_NODE:
 	            return true;
 	        default:
 	            return false;

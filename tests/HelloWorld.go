@@ -20,5 +20,7 @@ var (
 
 func main() {
 	var dudu [43]int;
+//	a = (2 + 3)*2
+//	a = main3(3)
 	dudu[3] = 2;
 }
