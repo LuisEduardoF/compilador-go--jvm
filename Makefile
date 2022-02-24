@@ -47,10 +47,8 @@ run:
 
 runall:
 	-for FILENAME in $(IN)/*.go; do \
-	 	cd $(GEN_PATH) && \
 	 	echo -e "\nRunning $${FILENAME}" && \
 	 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $${FILENAME}; \
-	 	cd .. ; \
 	done;
 
 clean:

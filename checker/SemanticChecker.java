@@ -316,7 +316,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 						AST valor = makeTreeAssignment(ctx.varSpec(i).expressionList().expression(j),assing);
 						assing.addChild(valor);
 
-						System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
+						// System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
 						Boolean implicitAccept = true;
 
 						if((assing.getChild(0).type == Type.FLOAT_TYPE && assing.getChild(1).type == Type.INT_TYPE)) implicitAccept = false;
@@ -350,7 +350,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 						AST valor = makeTreeAssignment(ctx.varSpec(i).expressionList().expression(k),assing);
 						assing.addChild(valor);
 
-						System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
+						// System.out.println(assing.getChild(0).type +" "+ assing.getChild(1).type);
 
 						Boolean implicitAccept = true;
 
