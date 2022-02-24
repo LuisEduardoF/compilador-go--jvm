@@ -63,6 +63,11 @@ public class AST {
 		this(kind, intData, 0.0f, "",false, escopo, type);
 	}
 
+	// Cria o nó com um dado variavel.
+	public AST(NodeKind kind, int intData, int escopo, float floatData,Type type) {
+		this(kind, intData, floatData, "",false, escopo, type);
+	}
+
 	// Adiciona um novo filho ao nó.
 	public void addChild(AST child) {
 		// A lista cresce automaticamente, então nunca vai dar erro ao adicionar.
@@ -119,6 +124,13 @@ public class AST {
 	    	
 	    }else if(this.kind == NodeKind.FUNC_NODE){
 	    	System.err.printf("%s@", ft.getName(this.intData));
+	    }else if(this.kind == NodeKind.ARRAY_NODE){
+	    	if(this.escopo == 0) {
+	    		System.err.printf("%s[%.0f]@", vt.getName(this.intData),this.floatData);
+	    	}
+	    	else {
+	    		System.err.printf("%s[%.0f]@", ft.getVarTable(this.escopo-1).getName(this.intData),this.floatData);
+	    	}
 	    }else {
 	    	System.err.printf("%s", this.kind.toString());
 	    }

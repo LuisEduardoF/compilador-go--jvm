@@ -131,6 +131,21 @@ public enum NodeKind {
 		public String toString() {
             return "arr_";
         }
+	},
+    AND_NODE {
+		public String toString() {
+            return "&&";
+        }
+	},
+	OR_NODE {
+		public String toString() {
+            return "||";
+        }
+	},
+	NEQ_NODE {
+		public String toString() {
+            return "!=";
+        }
 	};
 	
 	public static boolean hasData(NodeKind kind) {

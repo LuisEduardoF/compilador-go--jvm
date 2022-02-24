@@ -72,6 +72,8 @@ public final class VarTable {
 		StringBuilder sb = new StringBuilder();
 		Formatter f = new Formatter(sb);
 		f.format("Variables table:\n");
+
+
 		for (int i = 0; i < table.size(); i++) {
 			f.format("[vt] Entry %d -- name: %s, line: %d, type: %s, tamArray: %d\n", i,
 	                 getName(i), getLine(i), getType(i).toString(),getTamArray(i));

@@ -15,8 +15,6 @@ var d float64 = 3.2 //variavel global
 
 func main() {
 	//blockScope
-	var a,b int;
-	a,b = teste1(3,3);
-	b = teste2();
+	var i int = 6;
 
 }

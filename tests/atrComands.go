@@ -2,21 +2,24 @@ package main
 
 
 func teste1(a int, b int) (int,int){
-	var i int = 3;
+
 	return a*b,a/b
 }
 
 func teste2() (int){
-	var i int = 4;
 	return 3;
 }
 
-var d float64 = 3.2 //variavel global
-
 func main() {
-	//blockScope
+	//atrComands
 	var a,b int;
-	a,b = teste1(3,3);
-	b = teste2();
+	a,b = teste1(3,4); 
+	
+	//e,f := teste1(3,4) isto nao fuciona =(
+
+	c := teste2()
+	d := teste2()
+	c = 34
+	d = 43
 
 }

@@ -373,8 +373,9 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				catch(Exception e){
 					int tam = ctx.varSpec(i).identifierList().IDENTIFIER().size();
 					for(int k = 0;k < tam;k++){
-						visit(ctx.varSpec(i).type_().typeLit().arrayType().elementType());
 						tamArray = Integer.parseInt(ctx.varSpec(i).type_().typeLit().arrayType().arrayLength().getStop().getText());
+						setLastDeclType(ctx.varSpec(i).type_().typeLit().arrayType().elementType().getStop().getText());
+						
 						newVar(ctx.varSpec(i).identifierList().IDENTIFIER(k).getSymbol());
 					}
 				}
@@ -452,6 +453,12 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			return ast.NodeKind.ERT_NODE;
 		}else if(operacao.equals("<=")){
 			return ast.NodeKind.ELT_NODE;
+		}else if(operacao.equals("&&")){
+			return ast.NodeKind.AND_NODE;
+		}else if(operacao.equals("||")){
+			return ast.NodeKind.OR_NODE;
+		}else if(operacao.equals("!=")){
+			return ast.NodeKind.NEQ_NODE;
 		}
 		
 		return null;
@@ -496,7 +503,8 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		// Criar a AST
 				
 		String func_name = ctx.primaryExpr().getStop().getText();
-		
+		int childs = ctx.arguments().getChildCount();
+
 		int idx = ft.lookupFunc(func_name);
 		if(idx == -1) {
 			this.funcNotDeclError(ctx.primaryExpr().getStop().getLine(), func_name);
@@ -507,7 +515,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		
 		
 		// Pegar os argumentos da função
-		int childs = ctx.arguments().getChildCount();
+		
 		Integer numOfExpression = 0;
 		GoParser.ExpressionListContext args_ctx = null;
 		if(childs != 2){
@@ -546,8 +554,14 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		return func_decl;
 	}
 	
+
+	private void outOfBoudariesArrayError(int line, String varName,int pos,int max) {
+		System.out.printf("[outOfBoudariesArrayError] SEMANTIC ERROR (%d): position %d is out of boudaries of array %s with length %d\n",line,pos,varName,max);
+		passed = false;
+	}
+
 	private AST makeTreeArrayAssignment(GoParser.PrimaryExprContext ctx) {
-		
+			
 			String arr_name = ctx.primaryExpr().getStop().getText();
 			
 			int idx = vt.lookupVar(arr_name);
@@ -564,10 +578,17 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			}else {
 				aux = vt;
 			}
-		
 			
-			AST arr_use = new AST(ast.NodeKind.ARRAY_NODE, idx, aux.getEscopo(), aux.getType(idx));
+			int pos = Integer.parseInt(ctx.index().expression().getStop().getText());
 			
+			if(pos > aux.getTamArray(idx) || pos < 0){
+				int line = ctx.getStop().getLine();
+				outOfBoudariesArrayError(line,arr_name,pos,aux.getTamArray(idx));
+				return null;
+			}
+			
+			AST arr_use = new AST(ast.NodeKind.ARRAY_NODE, idx, aux.getEscopo(), pos, aux.getType(idx));
+
 			return arr_use;
 	}
 	
@@ -629,10 +650,13 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 					try {
 						// Funcao
 						GoParser.ArgumentsContext argumentsContext = ctx.primaryExpr().arguments();
+						
 						return makeTreeFuncAssignment(ctx.primaryExpr());
 					}catch(Exception e2) {
 						// Array
+						
 						GoParser.IndexContext indexContext = ctx.primaryExpr().index();
+						
 						return makeTreeArrayAssignment(ctx.primaryExpr());
 					}
 				}
@@ -712,8 +736,11 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 		if(ctx.expressionList(0).expression().size() != ctx.expressionList(1).expression().size()) {
 			//if(ctx.expressionList(1).expression(0).primaryExpr().getC)
 			funcao = false;
-			//assignNumError(ctx.getStop().getLine());
-			//return null;
+			if(ctx.expressionList(1).expression(0).primaryExpr().getChildCount() != 2){
+				assignNumError(ctx.getStop().getLine());
+				return null;
+			}
+			
 		}
 		
 		int cont = 0;
@@ -729,21 +756,42 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
 			String vari = expressao.getStop().getText();
 			
+			if(vari.equals("]")){
+				vari = expressao.primaryExpr().primaryExpr().getStop().getText();
+			}
+
+			int idx = this.vt.lookupVar(vari);
+			int idx2 = this.global.lookupVar(vari);
 			
-			if(this.vt.lookupVar(vari) == -1 && i == 0 && this.global.lookupVar(vari) == -1){
+			if(idx == -1 && i == 0 &&  idx == -1){
 				String varName = vari;
 				int line = 10;
 				varNotDeclError(line,varName);
-
 				return null;
 			}
 			
-			AST ramo = this.makeTreeAssignment(expressao, assignTree);
-	
-			visit(expressao);
-			
+			VarTable aux;
+			if(idx == -1) {
+				aux = global;
+				idx = idx2;
+
+			}else {
+				aux = vt;
+			}
+
+
 			//confere se a variavel ta recebendo o mesmo tipo
-			if(i == 0) primeiroTipo = this.lastDeclType;
+			if(i == 0) {
+				primeiroTipo = aux.getType(idx);
+			}
+
+
+			AST ramo = this.makeTreeAssignment(expressao, assignTree);
+			
+			//AST.printDot(ramo,global,ft);
+			//visit(expressao);
+			//System.out.println(primeiroTipo);
+
 
 			if(primeiroTipo != ramo.type && i == 1 && ramo.type != Type.NO_TYPE){
 				int line = expressao.getStop().getLine();
@@ -760,7 +808,6 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 				paiAssignTree.addChild(ramo);
 			}
 			else return null;
-			
 			// (0, 0) (a) | (0, 1) (b) | (1, 1)  (1, 1) | (0,2) = (1,2) | (0,j) = (1,j)
 			if(funcao) {
 				if(cont % 2 == 0) {
