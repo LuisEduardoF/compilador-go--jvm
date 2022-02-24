@@ -146,6 +146,11 @@ public enum NodeKind {
 		public String toString() {
             return "!=";
         }
+	},
+	MOD_NODE {
+		public String toString() {
+            return "%";
+        }
 	};
 	
 	public static boolean hasData(NodeKind kind) {
