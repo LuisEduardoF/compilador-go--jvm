@@ -475,6 +475,8 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 			return ast.NodeKind.OR_NODE;
 		}else if(operacao.equals("!=")){
 			return ast.NodeKind.NEQ_NODE;
+		}else if(operacao.equals("%")){
+			return ast.NodeKind.MOD_NODE;
 		}
 		
 		return null;
