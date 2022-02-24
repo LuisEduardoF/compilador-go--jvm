@@ -42,7 +42,7 @@ public final class FuncTable {
 	}
 	
 	public List<Type> getTypes(int i) {
-		return table.get(i).retorno;
+		return table.get(i).param;
 	}
 	
 	public String getTypesString(int i) {

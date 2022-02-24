@@ -1,5 +1,7 @@
 package main
 
+
+
 func main() {
 
 	n1 , n2 := 0, 1;
