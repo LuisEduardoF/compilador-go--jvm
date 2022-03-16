@@ -7,6 +7,8 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import code.CodeGen;
+
 import parser.GoLexer;
 import parser.GoParser;
 
@@ -65,6 +67,11 @@ public class Main {
 		}else {
 			System.out.println("PARSE FAILED!");
 		}
+
+		System.out.println("\nCodigo jasmin:\n");
+
+		CodeGen geradorCodigo = new CodeGen(checker.vt, checker.st, checker.ft, checker.global);
+		geradorCodigo.execute(checker.root);
 	}
 
 }

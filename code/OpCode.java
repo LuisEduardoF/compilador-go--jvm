@@ -52,14 +52,14 @@ public enum OpCode {
     // Loads and stores
 
     // Load word (from address)
-    LDWi("LDWi", 2), 	// LDWi ix, addr	; ix <- data_mem[addr]
-    LDWf("LDWf", 2), 	// LDWf fx, addr	; fx <- data_mem[addr]
+    iload("iload", 2), 	// iload load an int value from a local variable #index
+    fload("fload", 2), 	// load a float value from a local variable #index
     // Load immediate (constant)
     LDIi("LDIi", 2), 	// LDIi ix, int_const	; ix <- int_const
     LDIf("LDIf", 2),  	// LDIf fx, float_const	; fx <- float_const (must be inside an int)
     // Store word (to address)
-    STWi("STWi", 2),  	// STWi addr, ix		; data_mem[addr] <- ix
-    STWf("STWf", 2),  	// STWf addr, fx		; data_mem[addr] <- fx
+    istore("istore", 2),  	// STWi addr, ix		; data_mem[addr] <- ix
+    fstore("fstore", 2),  	// STWf addr, fx		; data_mem[addr] <- fx
            
 
     // ---------------------------------------------------

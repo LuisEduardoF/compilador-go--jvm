@@ -43,11 +43,11 @@ import ast.AST;
 
 public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
-	private StrTable st = new StrTable();   // Tabela de strings.
-	private VarTable global = new VarTable(); //Tabela de variaveis globais
-	private FuncTable ft = new FuncTable(); // Tabela de funcoes
+	public StrTable st = new StrTable();   // Tabela de strings.
+	public FuncTable ft = new FuncTable(); // Tabela de funcoes
 
-    private VarTable vt;   // Ponteiro para uma tabela de variaveis;
+	public VarTable global = new VarTable(); //Tabela de variaveis globais
+    public VarTable vt;   // Ponteiro para uma tabela de variaveis;
     
     Type lastDeclType;  // Variável "global" com o último tipo declarado.
     
