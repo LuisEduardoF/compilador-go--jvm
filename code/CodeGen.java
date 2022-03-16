@@ -1,5 +1,5 @@
-0package code;
+package code;
 
 public class CodeGen {
-    
+
 }
