@@ -1,5 +1,9 @@
 package code;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import ast.AST;
 import ast.ASTBaseVisitor;
 import tables.FuncTable;
@@ -14,26 +18,58 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 	private VarTable vt;
     private VarTable gt;
     private FuncTable ft;
-
-    public CodeGen(VarTable vt,StrTable st, FuncTable ft, VarTable gt){
+    private BufferedWriter writer;
+    
+    public CodeGen(VarTable vt,StrTable st, FuncTable ft, VarTable gt) throws IOException{
         this.vt = vt;
         this.st = st;
         this.ft = ft;
         this.gt = gt;
+        this.writer = new BufferedWriter(new FileWriter("out.j"));
     }
 
     int lenFunctionInput = 0; //variavel que tem o tamanho da entrada
 
+    public void writeJasmin(String str){
+        try{
+            this.writer.write(str);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void closeJasmin(){
+        try{
+            this.writer.close();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void montaCabecalho(){
+        this.writeJasmin(".class public GoProgram\n.super java/lang/Object\n\n");
+    }
+
     public void execute(AST tree){
+        montaCabecalho();
         visit(tree);
     }
 
-    public void emit(String s,int addr){
+    public void emit(String s, int addr) {
         if (addr != -1){
-            System.out.print(s+" ");
-            System.out.println(addr);
-        }else{
-            System.out.println(s);
+            this.writeJasmin("\t" + s +" ");
+            this.writeJasmin(addr + "\n");
+        } else{
+            this.writeJasmin("\t" + s + "\n");
+        }
+    }
+    
+    public void emit(String s, float addr){
+        if (addr != -1){
+            this.writeJasmin("\t" + s + " ");
+            this.writeJasmin(String.format("%f\n",addr));
+        } else{
+            this.writeJasmin("\t" + s + "\n");
         }
     }
 
@@ -43,21 +79,16 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 	    visit(r);
 	    int addr = lenFunctionInput + node.getChild(0).intData; //Tamanho da entrada + Registrador da variavel(intData)
         
-        //System.out.println("Addr:" + addr); // Debug ADDR
-
 	    Type varType = vt.getType(node.getChild(0).intData); 
                          
 	    if (varType == Type.FLOAT_TYPE) {
             emit("fstore", addr);
-	    } else if(varType == Type.INT_TYPE){ // All other types, include ints, bools and strs.
+	    } else if(varType == Type.INT_TYPE){
 	        emit("istore", addr);
 	    }
 	    return -1; // This is not an expression, hence no value to return.
     }
-    //iload 2
-    //iload 3
-    //sum
-    //istore
+
 	@Override
     protected Integer visitEq(AST node){
         visit(node.getChild(0));
@@ -147,6 +178,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
 	@Override
     protected Integer visitRealVal(AST node){
+        emit("ldc", node.floatData);
         return -1;
     }
 
@@ -157,6 +189,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
 	@Override
     protected Integer visitStrVal(AST node){
+        emit("ldc " + "\"" + node.stringData + "\"",-1);
         return -1;
     }
 
@@ -182,6 +215,15 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
 	@Override
     protected Integer visitWrite(AST node){
+        emit("getstatic java/lang/System/out Ljava/io/PrintStream;", -1);
+
+        visit(node.getChild(1));
+
+        if(node.getChild(1).getType() == Type.INT_TYPE)
+            emit("invokevirtual java/io/PrintStream/println(I)V", -1);
+        else if(node.getChild(1).getType() == Type.STRING_TYPE)
+            emit("invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V",-1);
+        
         return -1;
     }
 
@@ -190,10 +232,13 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         this.lenFunctionInput = this.ft.getParamSize(node.intData);
 
         String nome = ft.getName(node.intData);
-        String method = ".method public static "+nome+ "([Ljava/lang/String;)V";
+        String method = "\n.method public static " + nome + "([Ljava/lang/String;)V\n";
         
-        emit(method,-1);
+        this.writeJasmin(method);
+        emit(".limit stack 20\n", -1);
         visit(node.getChild(0));
+
+        this.writeJasmin("\n.end method\n");
         return -1;
     }
 
@@ -203,7 +248,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     }
 
     @Override
-    protected Integer  visitOrNode(AST node){
+    protected Integer visitOrNode(AST node){
         return -1;
     }
 

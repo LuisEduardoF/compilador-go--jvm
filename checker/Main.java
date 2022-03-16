@@ -71,7 +71,9 @@ public class Main {
 		System.out.println("\nCodigo jasmin:\n");
 
 		CodeGen geradorCodigo = new CodeGen(checker.vt, checker.st, checker.ft, checker.global);
+
 		geradorCodigo.execute(checker.root);
+		geradorCodigo.closeJasmin();
 	}
 
 }

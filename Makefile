@@ -51,5 +51,9 @@ runall:
 	 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $${FILENAME}; \
 	done;
 
+compile:
+	java -jar jasmin-2.4/jasmin.jar *.j
+
 clean:
 	@rm -rf $(GEN_PATH) $(BIN_PATH)
+	@rm -rf *.j
