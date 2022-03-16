@@ -3,9 +3,11 @@ package code;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.UUID;
 
 import ast.AST;
 import ast.ASTBaseVisitor;
+import ast.NodeKind;
 import tables.FuncTable;
 import tables.StrTable;
 import tables.VarTable;
@@ -29,6 +31,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     }
 
     int lenFunctionInput = 0; //variavel que tem o tamanho da entrada
+    String lastStringGenerate;
 
     public void writeJasmin(String str){
         try{
@@ -125,6 +128,28 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
 	@Override
     protected Integer visitIf(AST node){
+        
+        Boolean elseTest = node.getChild(1).kind == NodeKind.BLOCK_NODE;
+        if(elseTest){
+            visit(node.getChild(2));
+            visit(node.getChild(0));
+            emit("goto "+ "saiif", -1);
+        }
+        else{
+            visit(node.getChild(1));
+            visit(node.getChild(0));
+            emit("goto "+ "saiif", -1);
+        }
+        
+        if(node.getChildren().size() > 2){
+            this.writeJasmin(lastStringGenerate+":\n\n");
+            if(elseTest) visit(node.getChild(1));
+            else visit(node.getChild(2));
+        }
+        
+        // Terminar IF com Label
+        this.writeJasmin("saiif:\n");
+
         return -1;        
     }
 
@@ -141,6 +166,14 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
     @Override
     protected Integer visitRt(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        this.lastStringGenerate = UUID.randomUUID().toString().substring(0, 5);
+        String ifClause = "if_cmple "+ this.lastStringGenerate;
+
+        emit(ifClause,-1);
+        
         return -1;
     }
 
@@ -156,16 +189,43 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
 	@Override
     protected Integer visitMinus(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        if(node.getType() == Type.INT_TYPE){
+            emit("isub", -1);
+        }else if(node.getType() == Type.FLOAT_TYPE){
+            emit("fsub", -1);
+        }
+
         return -1;
     }
 
 	@Override
     protected Integer visitOver(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        if(node.getType() == Type.INT_TYPE){
+            emit("idiv", -1);
+        }else if(node.getType() == Type.FLOAT_TYPE){
+            emit("fdiv", -1);
+        }
+
         return -1;
     }
 
 	@Override
     protected Integer visitPlus(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        if(node.getType() == Type.INT_TYPE){
+            emit("iadd", -1);
+        }else if(node.getType() == Type.FLOAT_TYPE){
+            emit("fadd", -1);
+        }
+
         return -1;
     }
 
@@ -202,8 +262,6 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
             emit("astore",node.getChild(1).intData+lenFunctionInput);
         }
 
-        
-        
         return -1;
     }
 
@@ -226,6 +284,15 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
 	@Override
     protected Integer visitTimes(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        if(node.getType() == Type.INT_TYPE){
+            emit("imul", -1);
+        }else if(node.getType() == Type.FLOAT_TYPE){
+            emit("fmul", -1);
+        }
+
         return -1;
     }
 
@@ -305,6 +372,15 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
     @Override
     protected Integer visitModNode(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        if(node.getType() == Type.INT_TYPE){
+            emit("irem", -1);
+        }else if(node.getType() == Type.FLOAT_TYPE){
+            emit("frem", -1);
+        }
+
         return -1;
     }
 
