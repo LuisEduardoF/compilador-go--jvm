@@ -57,3 +57,4 @@ compile:
 clean:
 	@rm -rf $(GEN_PATH) $(BIN_PATH)
 	@rm -rf *.j
+	@rm -rf GoProgram.class
