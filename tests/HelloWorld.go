@@ -2,18 +2,15 @@ package main
 
 func main() {
 
-	n1 , n2 := 0, 1;
+	var x int = 0;
 
-	var qtd int;
-
-	fmt.Scanln(qtd); //qtd de termos do fibonati
-
-	for qtd > 0{
-		n3 := n1 + n2
-		fmt.Println(n3);
-		n1 = n2
-		n2 = n3;
-		qtd = qtd-1;
+	if(x == 3 && x == 3){
+		fmt.Println("GO")
+	}else if(x == 2){
+		x = 3213
+	}else{
+		x= 4343
 	}
-	fmt.Println("Fim");
+
+	
 }
