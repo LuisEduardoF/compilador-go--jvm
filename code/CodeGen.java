@@ -31,7 +31,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     }
 
     int lenFunctionInput = 0; //variavel que tem o tamanho da entrada
-    String lastStringGenerate;
+    NodeKind lastNodeTypeVisited;
 
     public void writeJasmin(String str){
         try{
@@ -99,7 +99,9 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     protected Integer visitEq(AST node){
         visit(node.getChild(0));
         visit(node.getChild(1));
-        
+
+        this.lastNodeTypeVisited = node.kind;
+
         return -1;
     }   
 
@@ -126,41 +128,104 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         return -1;     
     }
 
+    private String checkIfType(Type tipo){
+        
+        if(tipo == Type.INT_TYPE){
+            switch(this.lastNodeTypeVisited){
+                case NEQ_NODE:
+                    return "if_icmpeq ";
+                case EQ_NODE:
+                    return "if_icmpne ";
+                case LT_NODE:
+                    return "if_icmpge ";
+                case RT_NODE:
+                    return "if_icmple ";
+                case ERT_NODE:
+                    return "if_icmplt ";
+                case ELT_NODE:
+                    return "if_icmpgt ";
+                default:
+                    return ""; // Não é operação
+            }
+        }else{
+            if(this.lastNodeTypeVisited == NodeKind.ELT_NODE || this.lastNodeTypeVisited == NodeKind.LT_NODE) emit("fcmpg", -1);
+            else emit("fcmpl",-1);
+            
+            switch(this.lastNodeTypeVisited){
+                case EQ_NODE:
+                    return "ifne "; 
+                case NEQ_NODE:
+                    return "ifeq "; 
+                case RT_NODE:
+                    return "ifle ";
+                case LT_NODE:
+                    return "ifge ";
+                case ELT_NODE:
+                    return "ifgt ";
+                case ERT_NODE:
+                    return "iflt ";
+                default:
+                    return ""; // Não é operação
+            }
+        }
+    }
+
+    int saiflag = 0; //pode estourar o numero
 	@Override
-    protected Integer visitIf(AST node){
-        
-        Boolean elseTest = node.getChild(1).kind == NodeKind.BLOCK_NODE;
-        if(elseTest){
-            visit(node.getChild(2));
-            visit(node.getChild(0));
-            emit("goto "+ "saiif", -1);
-        }
-        else{
+    protected Integer visitIf(AST node){ //IF encadeado não funciona!!!
+        int bgn = this.saiflag;
+        String ifType ;
+        if(node.getChildren().size() == 2){ //caso base if
             visit(node.getChild(1));
+            ifType = checkIfType(node.getChild(1).getChild(1).getType());
+            emit(ifType+ "saiif"+bgn, -1); //errado
             visit(node.getChild(0));
-            emit("goto "+ "saiif", -1);
-        }
-        
-        if(node.getChildren().size() > 2){
+        }else{
+            String lastStringGenerate = "L" + UUID.randomUUID().toString().substring(0, 5);
+            Boolean elseTest = node.getChild(1).kind == NodeKind.BLOCK_NODE;
+            if(elseTest){ //caso seja um else
+                visit(node.getChild(2));
+                ifType = checkIfType(node.getChild(2).getChild(1).getType());
+                emit(ifType+ lastStringGenerate,-1);
+                visit(node.getChild(0));
+                emit("goto "+ "saiif"+bgn, -1);
+            }
+            else{
+                visit(node.getChild(1));
+                ifType = checkIfType(node.getChild(1).getChild(1).getType());
+                emit(ifType+ lastStringGenerate, -1);
+                visit(node.getChild(0));
+                emit("goto "+ "saiif" + bgn, -1);
+            }
             this.writeJasmin(lastStringGenerate+":\n\n");
             if(elseTest) visit(node.getChild(1));
             else visit(node.getChild(2));
         }
-        
-        // Terminar IF com Label
-        this.writeJasmin("saiif:\n");
-
+        if(bgn == this.saiflag){
+            this.writeJasmin("saiif" + bgn + ":\n");
+            this.saiflag++;
+        }
         return -1;        
     }
 
 	@Override
     protected Integer visitIntVal(AST node){
+        
+        if(node.type == Type.FLOAT_TYPE){
+            emit("ldc " + node.intData + ".f", -1);
+            return -1;
+        }
+        
         emit("ldc",node.intData);
         return -1;   
     }
 
 	@Override
     protected Integer visitLt(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        this.lastNodeTypeVisited = node.kind;
         return -1;
     }
 
@@ -169,21 +234,26 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         visit(node.getChild(0));
         visit(node.getChild(1));
 
-        this.lastStringGenerate = UUID.randomUUID().toString().substring(0, 5);
-        String ifClause = "if_cmple "+ this.lastStringGenerate;
-
-        emit(ifClause,-1);
+        this.lastNodeTypeVisited = node.kind;
         
         return -1;
     }
 
     @Override
     protected Integer visitErt(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        this.lastNodeTypeVisited = node.kind;
         return -1;
     }
     
     @Override
     protected Integer visitElt(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        this.lastNodeTypeVisited = node.kind;
         return -1;
     }
 
@@ -267,12 +337,27 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
 	@Override
     protected Integer visitRealVal(AST node){
-        emit("ldc", node.floatData);
+        emit("ldc " + node.floatData + "f", -1);
         return -1;
     }
 
+    
+    int qtdWhile = 0;
 	@Override
     protected Integer visitRepeat(AST node){
+        this.writeJasmin("label" + qtdWhile + ":\n");
+        // If sla oq
+        // Comando
+        visit(node.getChild(1));
+        String ifType = checkIfType(node.getChild(1).getChild(1).getType());
+        emit(ifType+ "saiWhile" + qtdWhile, -1); 
+        visit(node.getChild(0));
+        //IF
+        // goto Label
+        
+        emit("goto label" + qtdWhile,-1);
+        this.writeJasmin("saiWhile"+qtdWhile+":\n");
+        qtdWhile++;
         return -1;
     }
 
@@ -367,6 +452,10 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
     @Override
     protected Integer visitNeqNode(AST node){
+        visit(node.getChild(0));
+        visit(node.getChild(1));
+
+        this.lastNodeTypeVisited = node.kind;
         return -1;
     }
 
