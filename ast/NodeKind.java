@@ -151,7 +151,12 @@ public enum NodeKind {
 		public String toString() {
             return "%";
         }
-	};
+	},
+    RETURN_NODE {
+		public String toString() {
+            return "return";
+        }
+	},;
 	
 	public static boolean hasData(NodeKind kind) {
 		switch(kind) {

@@ -33,7 +33,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         // this.funcwriter = new BufferedWriter(new FileWriter("functions.j"));
     }
     //IDEIA -> write Jasmin imprime dependendo de uma flag main = 0;
-    int lenFunctionInput = 0; //variavel que tem o tamanho da entrada
+    //int lenFunctionInput = 0; //variavel que tem o tamanho da entrada
     NodeKind lastNodeTypeVisited;
 
     // public void writeFunction(String str){
@@ -97,7 +97,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     protected Integer visitAssign(AST node){
         AST r = node.getChild(1);
 	    visit(r);
-	    int addr = lenFunctionInput + node.getChild(0).intData; //Tamanho da entrada + Registrador da variavel(intData)
+	    int addr = node.getChild(0).intData; //Tamanho da entrada + Registrador da variavel(intData)
         
 	    Type varType = vt.getType(node.getChild(0).intData); 
                          
@@ -384,16 +384,16 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
         if(node.getChild(1).getType() == Type.INT_TYPE){
             emit("invokevirtual java/util/Scanner/nextInt()I",-1);
-            emit("istore",node.getChild(1).intData+lenFunctionInput);
+            emit("istore",node.getChild(1).intData);
         } else if(node.getChild(1).getType() == Type.FLOAT_TYPE){
             emit("invokevirtual java/util/Scanner/nextFloat()F",-1);
-            emit("fstore",node.getChild(1).intData+lenFunctionInput);
+            emit("fstore",node.getChild(1).intData);
         }else if(node.getChild(1).getType() == Type.BOOL_TYPE){
             emit("invokevirtual java/util/Scanner/nextBoolean()Z",-1);
-            emit("istore",node.getChild(1).intData+lenFunctionInput);
+            emit("istore",node.getChild(1).intData);
         }else if(node.getChild(1).getType() == Type.STRING_TYPE){
             emit("invokevirtual java/util/Scanner/nextLine()Ljava/lang/String;",-1);
-            emit("astore",node.getChild(1).intData+lenFunctionInput);
+            emit("astore",node.getChild(1).intData);
         }
 
         return -1;
@@ -452,7 +452,9 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
 	@Override
     protected Integer visitVarUse(AST node){
-        int addr = node.intData+lenFunctionInput;
+        int addr= node.intData;
+        //if(inFunc == 0) addr = node.intData;
+        //else addr = node.intData;
         if (node.type == Type.FLOAT_TYPE) {
             emit("fload", addr);
 	    } else if(node.type == Type.INT_TYPE){
@@ -501,9 +503,9 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         parametros += ")";
         String retorno = "";
         List<Type> ret = ft.getReturns(node.intData);
-        for(int i = 0; i < ret.size(); i++){
-            retorno += defineTipoJasmin(param.get(i));
-        }
+        
+        retorno += defineTipoJasmin(ret.get(0)); //retorno só retorna 1
+        
         return nome + parametros + retorno;
     }
     int inFunc = 0;
@@ -512,7 +514,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         
         if(this.inFunc == 0){ // Declarando Função
             inFunc = 1;
-            this.lenFunctionInput = this.ft.getParamSize(node.intData);
+            //this.lenFunctionInput = this.ft.getParamSize(node.intData);
 
             String nome = ft.getName(node.intData);
             String method;
@@ -620,6 +622,14 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     protected Integer visitArrayNode(AST node){
         
 
+        return -1;
+    }
+    
+    @Override
+    protected  Integer visitReturn(AST node){
+
+        visit(node.getChild(0));
+        
         return -1;
     }
 }

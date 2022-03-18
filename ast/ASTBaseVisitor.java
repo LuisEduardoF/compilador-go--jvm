@@ -53,6 +53,7 @@ public abstract class ASTBaseVisitor<T> {
             case OR_NODE:       return visitOrNode(node);
             case NEQ_NODE:      return visitNeqNode(node);
             case MOD_NODE:      return visitModNode(node);
+			case RETURN_NODE: 	return visitReturn(node);
 
             
 	        default:
@@ -111,6 +112,8 @@ public abstract class ASTBaseVisitor<T> {
 	protected abstract T visitWrite(AST node);
 
     protected abstract T visitFunc(AST node);
+
+	protected abstract T visitReturn(AST node);
 
     protected abstract T visitAndNode(AST node);
 

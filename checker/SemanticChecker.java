@@ -3,6 +3,8 @@ package checker;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.sound.midi.SysexMessage;
+
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -74,6 +76,7 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
     
     // Cria uma nova variável a partir do dado token.
     AST newVar(Token token) {
+		
     	String text = token.getText();
     	int line = token.getLine();
    		int idx = vt.lookupVar(text);
@@ -208,6 +211,41 @@ public class SemanticChecker extends GoParserBaseVisitor<AST> {
 
     	return this.root;
     }
+
+	@Override 
+	public AST visitReturnStmt(GoParser.ReturnStmtContext ctx) { 
+		
+		AST returnNode = AST.newSubtree(ast.NodeKind.RETURN_NODE,Type.NO_TYPE);
+		int tam = ctx.expressionList().expression().size();
+		for(int i = 0; i < tam;i++){
+			AST expression = makeTreeAssignment(ctx.expressionList().expression(i), null);
+			returnNode.addChild(expression);
+		}
+		
+		return fazPai(returnNode);
+	}
+
+	
+	@Override 
+	public AST visitParameters(GoParser.ParametersContext ctx){
+		
+		int tam = 0;
+		try{
+			tam = ctx.parameterDecl().size();
+			if(ctx.parameterDecl(0).getChildCount() == 1){
+				return null;
+			}
+		}catch(Exception e){
+			return null;
+		}
+
+		for(int i = 0; i < tam;i++){
+			visit(ctx.parameterDecl(i).type_());
+			newVar(ctx.parameterDecl(i).identifierList().IDENTIFIER(0).getSymbol());
+		}
+
+		return null;
+	}
     
     void setLastDeclType(String tipo){
     	if(tipo.equals("bool")){
