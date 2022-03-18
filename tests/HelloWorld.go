@@ -1,7 +1,7 @@
 package main
 
-func leAluno(num int) {
-
+func leAluno(num int) (int) {
+	return ;
 }
 
 func main() {

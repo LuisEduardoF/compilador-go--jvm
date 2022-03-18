@@ -491,6 +491,21 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         else return "V";
     }
 
+    public String makeFuncParamReturn(AST node){
+        String nome = ft.getName(node.intData);
+        String parametros = "(";
+        List<Type> param = ft.getTypes(node.intData);
+        for(int i = 0; i < ft.getParamSize(node.intData); i++){
+            parametros += defineTipoJasmin(param.get(i));
+        }
+        parametros += ")";
+        String retorno = "";
+        List<Type> ret = ft.getReturns(node.intData);
+        for(int i = 0; i < ret.size(); i++){
+            retorno += defineTipoJasmin(param.get(i));
+        }
+        return nome + parametros + retorno;
+    }
     int inFunc = 0;
     @Override
     protected Integer visitFunc(AST node){
@@ -502,22 +517,34 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
             String nome = ft.getName(node.intData);
             String method;
             if(nome.equals("main")){
-                method = "\n.method public static " + nome + "([Ljava/lang/String;)V\n"; //trocar
+                method = "\n.method public static " + nome + "([Ljava/lang/String;)V\n"; 
             } else{
-                String parametros = "(";
-                List<Type> param = ft.getTypes(node.intData);
-                for(int i = 0; i < ft.getParamSize(node.intData); i++){
-                   parametros += defineTipoJasmin(param.get(i));
-                }
-                parametros += ")";
-                method = "\n.method public static " + nome + parametros + "\n"; //trocar
+                method = "\n.method public static " + makeFuncParamReturn(node) + "\n"; //trocar
             }
             
             this.writeJasmin(method);
             emit(".limit stack 20", -1);
             emit(".limit locals 20\n", -1);
             visit(node.getChild(0));
-            emit("return",-1);
+        
+            List<Type> ret = ft.getReturns(node.intData);
+            if(ret.size() > 0){
+                Type retType = ret.get(0);
+                if (retType == Type.FLOAT_TYPE) {
+                    emit("freturn", -1);
+                } else if(retType == Type.INT_TYPE){
+                    emit("ireturn", -1);
+                } else if(retType == Type.STRING_TYPE){
+                    emit("areturn", -1);
+                } else if(retType == Type.BOOL_TYPE){
+                    emit("ireturn", -1);
+                } else {
+                    emit("return", -1);
+                }
+            }
+            else{
+                emit("return", -1);
+            }
             this.writeJasmin("\n.end method\n");
             inFunc = 0;
         }
@@ -525,7 +552,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
             for(int i = 0; i < this.ft.getParamSize(node.intData); i++){
                 visit(node.getChild(i));
             }
-            String nome = "GoProgram/" + ft.getName(node.intData) + "(I)V"; // trocar
+            String nome = "GoProgram/" + makeFuncParamReturn(node); // trocar
             emit("invokestatic " + nome ,-1);
 
         }

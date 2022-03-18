@@ -49,6 +49,10 @@ public final class FuncTable {
 		return table.get(i).param.size();
 	}
 	
+	public List<Type> getReturns(int i) {
+		return table.get(i).retorno;
+	}
+
 	public String getTypesString(int i) {
 		String retorno = "";
 		for(Type t: table.get(i).retorno) {
