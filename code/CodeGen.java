@@ -21,6 +21,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     private VarTable gt;
     private FuncTable ft;
     private BufferedWriter writer;
+    private BufferedWriter funcwriter;
     
     public CodeGen(VarTable vt,StrTable st, FuncTable ft, VarTable gt) throws IOException{
         this.vt = vt;
@@ -28,10 +29,19 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         this.ft = ft;
         this.gt = gt;
         this.writer = new BufferedWriter(new FileWriter("out.j"));
+        this.funcwriter = new BufferedWriter(new FileWriter("functions.j"));
     }
-
+    //IDEIA -> write Jasmin imprime dependendo de uma flag main = 0;
     int lenFunctionInput = 0; //variavel que tem o tamanho da entrada
     NodeKind lastNodeTypeVisited;
+
+    public void writeFunction(String str){
+        try{
+            this.funcwriter.write(str);
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
 
     public void writeJasmin(String str){
         try{
@@ -53,8 +63,13 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         this.writeJasmin(".class public GoProgram\n.super java/lang/Object\n\n");
     }
 
+    public void montaCabecalhoFunction(){
+        this.writeFunction(".class public Functions\n.super java/lang/Object\n\n");
+    }
+
     public void execute(AST tree){
         montaCabecalho();
+        montaCabecalhoFunction();
         visit(tree);
     }
 
@@ -99,16 +114,15 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     public void BotaIF(Type t, int bgn){
 
         if(this.flagCompostLogical == 0) this.lastStringGenerate = "L" + UUID.randomUUID().toString().substring(0, 5);
-        String ifType ;
+       
+        String ifType;
         if(ifModo == 0){
             ifType = checkIfType(t);
             emit(ifType + "saiif" + bgn, -1); //errado
         }else{
             ifType = checkIfType(t);
             emit(ifType+ this.lastStringGenerate,-1);
-        }
-
-        
+        }  
 
     }
 
@@ -117,7 +131,8 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         visit(node.getChild(0));
         visit(node.getChild(1));
         
-        this.lastNodeTypeVisited = node.kind;
+        if(this.negOR == 0) this.lastNodeTypeVisited = node.kind;
+        else this.lastNodeTypeVisited = NodeKind.NEQ_NODE;
 
         BotaIF(node.getChild(1).getType(), lastbgn);
 
@@ -196,29 +211,43 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 	@Override
     protected Integer visitIf(AST node){ //IF encadeado não funciona!!!
         int bgn = this.saiflag;
-        String ifType;
         this.lastbgn = bgn;
+
+        
+        
         if(node.getChildren().size() == 2){ //caso base if
             this.ifModo = 0;
-            visit(node.getChild(1));
-            
-            visit(node.getChild(0));
+            visit(node.getChild(1)); //condição            
+            if(node.getChild(1).kind == NodeKind.OR_NODE){
+                this.writeJasmin(this.salvaUltimo+":\n"); // Se for OR
+            }
+            visit(node.getChild(0)); //block
+
         }else{
             
             Boolean elseTest = node.getChild(1).kind == NodeKind.BLOCK_NODE;
             if(elseTest){ //caso seja um else
                 this.ifModo = 1; 
-                visit(node.getChild(2));
-                visit(node.getChild(0));
+                visit(node.getChild(2)); //condição
+                
+                if(node.getChild(2).kind == NodeKind.OR_NODE){
+                    this.writeJasmin(this.salvaUltimo+":\n"); // Se for OR
+                }
+
+                visit(node.getChild(0)); //block
                 emit("goto " + "saiif" + bgn, -1);
             }
-            else{
+            else{ // ELSE IF
                 this.ifModo = 1;
-                visit(node.getChild(1));
-                visit(node.getChild(0));
+                visit(node.getChild(1)); //condição
+                if(node.getChild(1).kind == NodeKind.OR_NODE){
+                    this.writeJasmin(this.salvaUltimo+":\n"); // Se for OR
+                }
+
+                visit(node.getChild(0)); //block
                 emit("goto "+ "saiif" + bgn, -1);
             }
-            this.writeJasmin(this.lastStringGenerate+":\n\n");
+            this.writeJasmin(this.lastStringGenerate+":\n"); // SE for AND
             if(elseTest) visit(node.getChild(1));
             else visit(node.getChild(2));
         }
@@ -247,7 +276,10 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         visit(node.getChild(0));
         visit(node.getChild(1));
 
-        this.lastNodeTypeVisited = node.kind;
+        if(this.negOR == 0){
+            this.lastNodeTypeVisited = node.kind;
+            
+        }else this.lastNodeTypeVisited = NodeKind.ERT_NODE;
         BotaIF(node.getChild(1).getType(), lastbgn);
         return -1;
     }
@@ -257,7 +289,9 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         visit(node.getChild(0));
         visit(node.getChild(1));
 
-        this.lastNodeTypeVisited = node.kind;
+        if(this.negOR == 0) this.lastNodeTypeVisited = node.kind;
+        else this.lastNodeTypeVisited = NodeKind.ELT_NODE;
+
         BotaIF(node.getChild(1).getType(), lastbgn);
         
         return -1;
@@ -268,7 +302,8 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         visit(node.getChild(0));
         visit(node.getChild(1));
 
-        this.lastNodeTypeVisited = node.kind;
+        if(this.negOR == 0) this.lastNodeTypeVisited = node.kind;
+        else this.lastNodeTypeVisited = NodeKind.LT_NODE;
         BotaIF(node.getChild(1).getType(), lastbgn);
         return -1;
     }
@@ -278,7 +313,8 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         visit(node.getChild(0));
         visit(node.getChild(1));
 
-        this.lastNodeTypeVisited = node.kind;
+        if(this.negOR == 0) this.lastNodeTypeVisited = node.kind;
+        else this.lastNodeTypeVisited = NodeKind.RT_NODE;
         BotaIF(node.getChild(1).getType(), lastbgn);
         return -1;
     }
@@ -444,39 +480,66 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         }
         return -1;
     }
-
+    int inFunc = 0;
     @Override
     protected Integer visitFunc(AST node){
-        this.lenFunctionInput = this.ft.getParamSize(node.intData);
-
-        String nome = ft.getName(node.intData);
-        String method = "\n.method public static " + nome + "([Ljava/lang/String;)V\n";
         
-        this.writeJasmin(method);
-        emit(".limit stack 20", -1);
-        emit(".limit locals 20\n", -1);
-        visit(node.getChild(0));
-        emit("return",-1);
-        this.writeJasmin("\n.end method\n");
+        if(this.inFunc == 0){ // Declarando Função
+            inFunc = 1;
+            this.lenFunctionInput = this.ft.getParamSize(node.intData);
+
+            String nome = ft.getName(node.intData);
+            String method = "\n.method public static " + nome + "([Ljava/lang/String;)V\n"; //trocar
+        
+            this.writeJasmin(method);
+            emit(".limit stack 20", -1);
+            emit(".limit locals 20\n", -1);
+            visit(node.getChild(0));
+            emit("return",-1);
+            this.writeJasmin("\n.end method\n");
+            inFunc = 0;
+        }
+        else{ // Chamando Função
+            for(int i = 0; i < this.ft.getParamSize(node.intData); i++){
+                visit(node.getChild(i));
+            }
+            String nome = "GoProgram/" + ft.getName(node.intData) + "()V"; // trocar
+            emit("invokestatic " + nome ,-1);
+
+        }
+        
         return -1;
     }
 
     int flagCompostLogical = 0;
     @Override
     protected Integer visitAndNode(AST node){
-        
-        int tam = node.getChildren().size();
-        for(int i = 0;i < tam;i++){
-            if(i == 1) this.flagCompostLogical = 1;
-            visit(node.getChild(i));
-        }
+        visit(node.getChild(0));
+        this.flagCompostLogical = 1;
+
+        visit(node.getChild(1));
         this.flagCompostLogical = 0;
+        
         return -1;
     }
 
+    int negOR = 0;
+    String salvaUltimo;
     @Override
     protected Integer visitOrNode(AST node){
+        // emit("or_label:" + , -1);
+
+        this.negOR = 1;
+        visit(node.getChild(0));
+        this.negOR = 0;
+        this.flagCompostLogical = 1;
+        this.salvaUltimo = this.lastStringGenerate;
+        this.lastStringGenerate = "L" + UUID.randomUUID().toString().substring(0, 5);
+        visit(node.getChild(1));
+        this.flagCompostLogical = 0;
+        
         return -1;
+
     }
 
     @Override
@@ -484,7 +547,8 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         visit(node.getChild(0));
         visit(node.getChild(1));
         
-        this.lastNodeTypeVisited = node.kind;
+        if(this.negOR == 0) this.lastNodeTypeVisited = node.kind;
+        else this.lastNodeTypeVisited = NodeKind.EQ_NODE;
         BotaIF(node.getChild(1).getType(), lastbgn);
         return -1;
     }
