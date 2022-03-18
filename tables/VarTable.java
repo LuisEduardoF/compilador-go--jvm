@@ -67,6 +67,10 @@ public final class VarTable {
 	public int getTamArray(int i) {
 		return table.get(i).tamArray;
 	}
+
+	public void setTamArrayZero(int i){
+		table.get(i).tamArray = 0;
+	}
 	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

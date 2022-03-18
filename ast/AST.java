@@ -20,7 +20,7 @@ public class AST {
 	public  final int intData;
 	public  final float floatData;
 	public  final String stringData;
-	public  final boolean boolData;
+	public  boolean boolData;
 	public 	final int escopo; //se for NodeKind VAR tem que ter escopo
 	public   Type type;
 	private final List<AST> children; // Privado para que a manipulação da lista seja controlável.

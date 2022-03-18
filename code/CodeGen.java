@@ -93,13 +93,78 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         }
     }
 
+    public int arrayHandle(AST node){
+        
+        Type varType;
+        int addr;
+        if(node.getChild(0).kind == NodeKind.ARRAY_NODE){
+            addr = node.getChild(0).intData;
+            
+            visit(node.getChild(0));
+            
+            emit("aload ",node.getChild(0).intData);
+            emit("bipush",(int)node.floatData);
+
+            visit(node.getChild(1));
+
+            varType = vt.getType(node.getChild(0).intData); 
+            if (varType == Type.FLOAT_TYPE) {
+                emit("fastore", -1);
+            } else if(varType  == Type.INT_TYPE || varType  == Type.BOOL_TYPE){
+                emit("iastore", -1);
+            }else if(varType == Type.STRING_TYPE){
+                emit("aastore",-1);
+            } 
+
+            return -1;
+        }
+        if(node.getChild(1).kind == NodeKind.ARRAY_NODE){
+            addr = node.getChild(1).intData;
+            
+            visit(node.getChild(1));
+            
+            emit("aload ",node.getChild(1).intData);
+            emit("bipush",(int)node.floatData);
+
+            varType = vt.getType(node.getChild(1).intData); 
+            if (varType == Type.FLOAT_TYPE) {
+                emit("faload", -1);
+            } else if(varType  == Type.INT_TYPE || varType  == Type.BOOL_TYPE){
+                emit("iaload", -1);
+            }else if(varType == Type.STRING_TYPE){
+                emit("aaload", -1);
+            } 
+
+            varType = vt.getType(node.getChild(0).intData); 
+            addr = node.getChild(0).intData;
+            if (varType == Type.FLOAT_TYPE) {
+                emit("fstore", addr);
+            } else if(varType == Type.INT_TYPE || varType == Type.BOOL_TYPE){
+                emit("istore", addr);
+            }else if(varType == Type.STRING_TYPE){
+                emit("astore", addr);
+            } 
+            return -1;
+        }
+
+        return -1;
+    }
+
     @Override
     protected Integer visitAssign(AST node){
+        Type varType;
+        int addr = node.getChild(0).intData; //Tamanho da entrada + Registrador da variavel(intData)
+        if(node.getChild(0).kind == NodeKind.ARRAY_NODE || node.getChild(1).kind == NodeKind.ARRAY_NODE){
+            arrayHandle(node);
+            return -1;
+        }
+
         AST r = node.getChild(1);
 	    visit(r);
-	    int addr = node.getChild(0).intData; //Tamanho da entrada + Registrador da variavel(intData)
         
-	    Type varType = vt.getType(node.getChild(0).intData); 
+	    
+        
+	    varType = vt.getType(node.getChild(0).intData); 
                          
 	    if (varType == Type.FLOAT_TYPE) {
             emit("fstore", addr);
@@ -517,6 +582,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
             //this.lenFunctionInput = this.ft.getParamSize(node.intData);
 
             String nome = ft.getName(node.intData);
+            this.vt = ft.getVarTable(node.intData);
             String method;
             if(nome.equals("main")){
                 method = "\n.method public static " + nome + "([Ljava/lang/String;)V\n"; 
@@ -621,7 +687,19 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
     @Override
     protected Integer visitArrayNode(AST node){
         
-
+        if(vt.getTamArray(node.intData) != 0){
+            emit("bipush ", vt.getTamArray(node.intData));
+            if(node.getType() == Type.STRING_TYPE){
+                emit("anewarray "+"java/lang/String",-1);
+            }
+            else{
+                emit("newarray "+node.getType(),-1);
+            }
+            
+            emit("astore", node.intData);
+            vt.setTamArrayZero(node.intData);
+        }
+        
         return -1;
     }
     
