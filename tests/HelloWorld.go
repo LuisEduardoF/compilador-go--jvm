@@ -1,12 +1,11 @@
 package main
 
-func leAluno(texto string){
-	
+func leAluno(num int) {
+
 }
 
-
 func main() {
-	
-	leAluno("texto")
+
+	leAluno(2)
 
 }

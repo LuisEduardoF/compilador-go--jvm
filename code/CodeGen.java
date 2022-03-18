@@ -1,17 +1,18 @@
 package code;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.UUID;
-
 import ast.AST;
 import ast.ASTBaseVisitor;
 import ast.NodeKind;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 import tables.FuncTable;
 import tables.StrTable;
 import tables.VarTable;
 import typing.Type;
+
 
 public class CodeGen extends ASTBaseVisitor<Integer>{
 
@@ -29,19 +30,19 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         this.ft = ft;
         this.gt = gt;
         this.writer = new BufferedWriter(new FileWriter("out.j"));
-        this.funcwriter = new BufferedWriter(new FileWriter("functions.j"));
+        // this.funcwriter = new BufferedWriter(new FileWriter("functions.j"));
     }
     //IDEIA -> write Jasmin imprime dependendo de uma flag main = 0;
     int lenFunctionInput = 0; //variavel que tem o tamanho da entrada
     NodeKind lastNodeTypeVisited;
 
-    public void writeFunction(String str){
-        try{
-            this.funcwriter.write(str);
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-    }
+    // public void writeFunction(String str){
+    //     try{
+    //         this.funcwriter.write(str);
+    //     }catch(Exception e){
+    //         e.printStackTrace();
+    //     }
+    // }
 
     public void writeJasmin(String str){
         try{
@@ -63,13 +64,14 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         this.writeJasmin(".class public GoProgram\n.super java/lang/Object\n\n");
     }
 
-    public void montaCabecalhoFunction(){
-        this.writeFunction(".class public Functions\n.super java/lang/Object\n\n");
-    }
+    //public void montaCabecalhoFunction(){
+        //this.writeFunction(".class public Functions\n.super java/lang/Object\n\n");
+    //}
 
+    @Override
     public void execute(AST tree){
         montaCabecalho();
-        montaCabecalhoFunction();
+        // montaCabecalhoFunction();
         visit(tree);
     }
 
@@ -480,6 +482,15 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         }
         return -1;
     }
+    
+    public String defineTipoJasmin(Type tipo) {
+        if(tipo == Type.INT_TYPE) return "I";
+        else if(tipo == Type.FLOAT_TYPE) return "F";
+        else if(tipo == Type.BOOL_TYPE) return "Z";
+        else if(tipo == Type.STRING_TYPE) return "Ljava/lang/String;";
+        else return "V";
+    }
+
     int inFunc = 0;
     @Override
     protected Integer visitFunc(AST node){
@@ -489,8 +500,19 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
             this.lenFunctionInput = this.ft.getParamSize(node.intData);
 
             String nome = ft.getName(node.intData);
-            String method = "\n.method public static " + nome + "([Ljava/lang/String;)V\n"; //trocar
-        
+            String method;
+            if(nome.equals("main")){
+                method = "\n.method public static " + nome + "([Ljava/lang/String;)V\n"; //trocar
+            } else{
+                String parametros = "(";
+                List<Type> param = ft.getTypes(node.intData);
+                for(int i = 0; i < ft.getParamSize(node.intData); i++){
+                   parametros += defineTipoJasmin(param.get(i));
+                }
+                parametros += ")";
+                method = "\n.method public static " + nome + parametros + "\n"; //trocar
+            }
+            
             this.writeJasmin(method);
             emit(".limit stack 20", -1);
             emit(".limit locals 20\n", -1);
@@ -503,7 +525,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
             for(int i = 0; i < this.ft.getParamSize(node.intData); i++){
                 visit(node.getChild(i));
             }
-            String nome = "GoProgram/" + ft.getName(node.intData) + "()V"; // trocar
+            String nome = "GoProgram/" + ft.getName(node.intData) + "(I)V"; // trocar
             emit("invokestatic " + nome ,-1);
 
         }
@@ -569,6 +591,8 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
     @Override
     protected Integer visitArrayNode(AST node){
+        
+
         return -1;
     }
 }
