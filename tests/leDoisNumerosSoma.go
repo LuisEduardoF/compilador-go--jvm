@@ -7,8 +7,8 @@ func somaNum(a int, b int) (int){
 func main() {
 	
 	var a , b int;
-	fmt.Scanln(a,b);
-
+	fmt.Scanln(a);
+	fmt.Scanln(b);
 	var soma int;
 
 	soma = somaNum(a,b)

@@ -1,8 +1,7 @@
 package main
 
-func leAluno(a int,b bool){
-	var x int;
-	fmt.Println(x);
+func leAluno(a int, b bool){
+	fmt.Println(b);
 }
 
 func main() {

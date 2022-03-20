@@ -26,7 +26,7 @@ BIN_PATH=bin
 # Diretório para os casos de teste
 DATA=$(ROOT)/tests
 IN=$(DATA)
-FILE=$(IN)/HelloWorld.go
+FILE=$(IN)/repet.go
 
 all: antlr javac
 	@echo "Done."
@@ -46,9 +46,17 @@ run:
 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $(FILE)
 
 runall:
+	make --no-print-directory clean
+	make --no-print-directory
 	-for FILENAME in $(IN)/*.go; do \
+		rm -r -f out.j; \
 	 	echo -e "\nRunning $${FILENAME}" && \
 	 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $${FILENAME}; \
+		if [ -f ./out.j ] ; then \
+			make --no-print-directory compile; \
+			java GoProgram; \
+    	fi; \
+		echo -e "\n------------------------------\n"; \
 	done;
 
 compile:

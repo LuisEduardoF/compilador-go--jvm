@@ -185,7 +185,9 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         String ifType;
         if(ifModo == 0){
             ifType = checkIfType(t);
-            emit(ifType + "saiif" + bgn, -1); //errado
+            if(inWhile == 0){
+                emit(ifType + "saiif" + bgn, -1); 
+            }
         }else{
             ifType = checkIfType(t);
             emit(ifType+ this.lastStringGenerate,-1);
@@ -472,8 +474,10 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
 
     
     int qtdWhile = 0;
+    int inWhile = 0;
 	@Override
     protected Integer visitRepeat(AST node){
+        inWhile = 1;
         this.writeJasmin("label" + qtdWhile + ":\n");
         visit(node.getChild(1));
         String ifType = checkIfType(node.getChild(1).getChild(1).getType());
@@ -482,6 +486,7 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         emit("goto label" + qtdWhile,-1);
         this.writeJasmin("saiWhile"+qtdWhile+":\n");
         qtdWhile++;
+        inWhile = 0;
         return -1;
     }
 
@@ -568,9 +573,12 @@ public class CodeGen extends ASTBaseVisitor<Integer>{
         parametros += ")";
         String retorno = "";
         List<Type> ret = ft.getReturns(node.intData);
-        
-        retorno += defineTipoJasmin(ret.get(0)); //retorno só retorna 1
-        
+        if(ret.size() > 0){
+            retorno += defineTipoJasmin(ret.get(0)); //retorno só retorna 1
+        }
+        else{
+            retorno = "V";
+        }
         return nome + parametros + retorno;
     }
     int inFunc = 0;

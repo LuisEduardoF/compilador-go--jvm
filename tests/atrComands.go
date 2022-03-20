@@ -1,9 +1,9 @@
 package main
 
 
-func teste1(a int, b int) (int,int){
+func teste1(a int, b int) (int){
 
-	return a*b,a/b
+	return a*b
 }
 
 func teste2() (int){
@@ -13,7 +13,7 @@ func teste2() (int){
 func main() {
 	//atrComands
 	var a,b int;
-	a,b = teste1(3,4); 
+	a = teste1(3,4); 
 	
 	//e,f := teste1(3,4) isto nao fuciona =(
 
@@ -21,5 +21,6 @@ func main() {
 	d := teste2()
 	c = 34
 	d = 43
+	fmt.Println(a)
 
 }

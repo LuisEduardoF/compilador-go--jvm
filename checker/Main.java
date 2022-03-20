@@ -62,18 +62,16 @@ public class Main {
 		// Saída final.
 		if (checker.hasPassed()) {
 			System.out.println("PARSE SUCCESSFUL!");
-			checker.printTables();
-			checker.printAST();
+			CodeGen geradorCodigo = new CodeGen(checker.vt, checker.st, checker.ft, checker.global);
+			geradorCodigo.execute(checker.root);
+			geradorCodigo.closeJasmin();
+			// checker.printTables();
+			// checker.printAST();
 		}else {
 			System.out.println("PARSE FAILED!");
 		}
-
-		System.out.println("\nCodigo jasmin:\n");
-
-		CodeGen geradorCodigo = new CodeGen(checker.vt, checker.st, checker.ft, checker.global);
-
-		geradorCodigo.execute(checker.root);
-		geradorCodigo.closeJasmin();
+		// System.out.println("\nCodigo jasmin:\n");
+		
 	}
 
 }

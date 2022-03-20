@@ -1,0 +1,48 @@
+java -jar /usr/local/lib/antlr-4.9.2-complete.jar -no-listener -visitor -o parser GoLexer.g4 GoParser.g4
+rm -r -f bin
+mkdir bin
+javac -cp .:/usr/local/lib/antlr-4.9.2-complete.jar -d bin */*.java
+Done.
+java -cp .:/usr/local/lib/antlr-4.9.2-complete.jar:bin checker/Main /home/duduek/compilador-go--jvm-2/tests/declCompostType.go
+PARSE SUCCESSFUL!
+java -jar jasmin-2.4/jasmin.jar *.j
+Generated: GoProgram.class
+.class public GoProgram
+.super java/lang/Object
+
+
+.method public static main([Ljava/lang/String;)V
+	.limit stack 20
+	.limit locals 20
+
+	bipush  43
+	newarray int
+	astore 0
+	aload  0
+	bipush 0
+	ldc 4
+	iastore
+	bipush  42
+	newarray float
+	astore 1
+	aload  1
+	bipush 0
+	ldc 3.4f
+	fastore
+	bipush  90
+	anewarray java/lang/String
+	astore 2
+	aload  2
+	bipush 0
+	ldc "vou amassar"
+	aastore
+	bipush  23
+	newarray boolean
+	astore 3
+	aload  3
+	bipush 0
+	iconst_1
+	iastore
+	return
+
+.end method

@@ -10,7 +10,7 @@ func main() {
 
 	fmt.Scanln(qtd); //qtd de termos do fibonati
 
-	for qtd > 0{
+	for(qtd > 0){
 		n3 := n1 + n2
 		fmt.Println(n3);
 		n1 = n2

@@ -11,7 +11,7 @@ public enum Type {
 	},
 	BOOL_TYPE {
 		public String toString() {
-	    		return "bool";
+	    		return "int";
 		}
 	},
 	INT_TYPE {

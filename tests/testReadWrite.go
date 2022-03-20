@@ -8,7 +8,7 @@ func main() {
 	var z string;
 	fmt.Scanln(z);
 
-	var y float;
+	var y float64;
 
 	fmt.Scanln(y);
 
