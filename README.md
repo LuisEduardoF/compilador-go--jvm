@@ -31,10 +31,24 @@ FILE=$(IN)/$NOME_DO_SEU_ARQUIVO
 make run
 ```
 
-Parar rodar todos os casos de testes, ie, testar o Scanner, Parser e Checker para todos arquivos ".go" na pasta tests.
+Parar rodar todos os casos de testes, i.e, testar o Scanner, Parser, Checker e Gerador de Código para todos arquivos ".go" na pasta tests.
+
 ```sh
 make runall
 ```
 
+Caso queira testar um arquivo em específico, basta mudar a variável FILE no Makefile. Feito isso, basta rodar os comandos:
 
+```sh
+make compile
+```
 
+```sh
+make run
+```
+
+Isso irá gerar um arquivo GoProgram.class, agora basta fazer:
+
+```sh
+java GoProgram.class
+```
