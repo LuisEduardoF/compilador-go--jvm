@@ -26,7 +26,7 @@ BIN_PATH=bin
 # Diretório para os casos de teste
 DATA=$(ROOT)/tests
 IN=$(DATA)
-FILE=$(IN)/repet.go
+FILE=$(IN)/HelloWorld.go
 
 all: antlr javac
 	@echo "Done."

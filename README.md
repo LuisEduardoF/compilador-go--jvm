@@ -29,6 +29,10 @@ make runall
 Caso queira testar um arquivo em específico, basta mudar a variável FILE no Makefile. Feito isso, basta rodar os comandos:
 
 ```sh
+make
+```
+
+```sh
 make run
 ```
 
@@ -39,7 +43,7 @@ make compile
 Isso irá gerar um arquivo GoProgram.class, agora basta fazer:
 
 ```sh
-java GoProgram.class
+java GoProgram
 ```
 
 O resultado será a execução final do código de entrada .go inserido na variável FILE, lembrando que esse código foi compilado para byte-code da JVM e então executado.
