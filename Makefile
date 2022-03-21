@@ -48,12 +48,15 @@ run:
 runall:
 	make --no-print-directory clean
 	make --no-print-directory
+	mkdir output
 	-for FILENAME in $(IN)/*.go; do \
 		rm -r -f out.j; \
 	 	echo -e "\nRunning $${FILENAME}" && \
 	 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) $(MAIN_PATH)/Main $${FILENAME}; \
 		if [ -f ./out.j ] ; then \
 			make --no-print-directory compile; \
+			cp out.j $${FILENAME##*/%.go}.j; \
+			mv $${FILENAME##*/%.go}.j output; \
 			java GoProgram; \
     	fi; \
 		echo -e "\n------------------------------\n"; \
@@ -64,5 +67,6 @@ compile:
 
 clean:
 	@rm -rf $(GEN_PATH) $(BIN_PATH)
+	@rm -rf output
 	@rm -rf *.j
 	@rm -rf GoProgram.class

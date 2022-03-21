@@ -19,4 +19,6 @@ func main() {
 		n = a*3;
 	}
 
+	fmt.Println(a)
+	fmt.Println(n)
 }

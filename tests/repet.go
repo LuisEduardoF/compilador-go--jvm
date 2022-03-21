@@ -9,6 +9,7 @@ func main() {
 		}else{
 			a = a+1
 		}
+		fmt.Println(a)
 		a = a+1;
 	}
 }
