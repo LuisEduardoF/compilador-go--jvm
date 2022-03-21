@@ -1,6 +1,6 @@
 # Compilador GO -> JVM
 
-Esse é um projeto da dísciplina de Compiladores do curso de Ciência da Computação na Universidade Federal do Espírito Santo (UFES). Foi desenvolvido um compilador de Golang para JVM utilizando-se a lingaugem Java e o ANTL4. Os alunos são: Enzo Cussuol, Luís Eduardo Câmara e Vitor Bonella.
+Esse é um projeto da dísciplina de Compiladores do curso de Ciência da Computação na Universidade Federal do Espírito Santo (UFES). Foi desenvolvido um compilador de Golang para JVM utilizando-se a linguagem Java e o ANTL4. Os alunos são: Enzo Cussuol, Luís Eduardo Câmara e Vitor Bonella.
 
 ## Instalação
 
